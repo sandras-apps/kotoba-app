@@ -651,7 +651,7 @@ async function scriptSuggest(q, codes){
       const lists = await Promise.all(tries.map(x => opensearch(x, 3)));
       const res = lists.flat();
       const exact = tries.filter(x => res.includes(x));
-      const rest = lists[0].filter(x => !exact.includes(x)).slice(0, Math.max(0, 3 - exact.length));
+      const rest = exact.length ? lists[0].filter(x => !exact.includes(x) && x.startsWith(hs[0])).slice(0, Math.max(0, 3 - exact.length)) : [];
       exact.concat(rest).forEach(w => out.push({w, tr: q, langs: [{c: 'ja'}]}));
     }
   }
