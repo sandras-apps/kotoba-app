@@ -27,7 +27,7 @@ const TXT = {
     size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
     sizeT:'Dimensione del testo', sizes:['Piccolo','Normale','Grande','Molto grande'],
     hello:['Buona notte','Buongiorno','Buon pomeriggio','Buonasera'], wotd:'Parola del giorno', surprise:'🎲 Parola a sorpresa', open:'Apri',
-    didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', noVoiceSi:'Per il singalese non esistono ancora registrazioni libere, e questo computer non ha una voce singalese. Sul telefono Android di solito funziona: nelle impostazioni della sintesi vocale di Google puoi scaricare la voce singalese.', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
+    didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', siAudio:'Per il singalese non abbiamo ancora file audio registrati, quindi per ora non si può ascoltare la pronuncia.', noVoiceSi:'Per il singalese non esistono ancora registrazioni libere, e questo computer non ha una voce singalese. Sul telefono Android di solito funziona: nelle impostazioni della sintesi vocale di Google puoi scaricare la voce singalese.', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
     review:'Ripassa', reviewT:'Ripasso', reveal:'Mostra il significato', knew:'✓ Lo sapevo', again:'↻ Ancora', of:'di',
     doneT:'Fatto!', doneMsg:'Hai ripassato {n}. Al primo colpo: {k}.', word1:'1 parola', wordN:'{n} parole', reviewMore:'Ripassa ancora', toList:'Torna alle parole', noGloss:'Apri la parola per vedere il significato.',
     note:'Nota', addNote:'✎ Aggiungi una nota', editNote:'✎ Modifica nota', notePh:'Una frase tua, un ricordo, un esempio per il romanzo…', saveNote:'Salva nota', yourNote:'La tua nota', formNote:'<b>variante</b> = non è la parola base, ma un plurale, un femminile o un verbo coniugato di un\u2019altra parola.',
@@ -49,7 +49,7 @@ const TXT = {
     size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
     sizeT:'Text size', sizes:['Small','Normal','Large','Extra large'],
     hello:['Good night','Good morning','Good afternoon','Good evening'], wotd:'Word of the day', surprise:'🎲 Surprise word', open:'Open',
-    didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', noVoiceSi:'There are no free Sinhala recordings yet, and this computer has no Sinhala voice. On Android phones it usually works: in Google text-to-speech settings you can download the Sinhala voice.', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
+    didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', siAudio:'We do not have recorded audio files for Sinhala yet, so pronunciation cannot be played for now.', noVoiceSi:'There are no free Sinhala recordings yet, and this computer has no Sinhala voice. On Android phones it usually works: in Google text-to-speech settings you can download the Sinhala voice.', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
     review:'Review', reviewT:'Review', reveal:'Show the meaning', knew:'✓ I knew it', again:'↻ Again', of:'of',
     doneT:'Done!', doneMsg:'You reviewed {n}. Right the first time: {k}.', word1:'1 word', wordN:'{n} words', reviewMore:'Review again', toList:'Back to my words', noGloss:'Open the word to see its meaning.',
     note:'Note', addNote:'✎ Add a note', editNote:'✎ Edit note', notePh:'Your own sentence, a memory, an example for your novel…', saveNote:'Save note', yourNote:'Your note', formNote:'<b>variant</b> = not the base word, but a plural, feminine or conjugated verb of another word.',
@@ -193,9 +193,9 @@ function show(){
     '<h1 lang="' + lc + '">' + big + (alt ? ' <small lang="' + lc + '">' + esc(alt) + '</small>' : '') + '</h1>' +
     (E.tr ? '<div class="roman">' + esc(E.tr) + '</div>' : '') +
     (pr.length ? '<div class="ipa">' + pr.map(p => '<span>' + esc(p.ipa) + (p.r ? ' ' + regionBadge(p.r) : (p.label && pr.length > 1 ? ' <em>' + esc(p.label.split(',')[0]) + '</em>' : '')) + '</span>').join('') + '</div>' : '') +
-    '<div class="acts"><button class="act" data-act="listen">🔊 ' + t('listen') + '</button>' +
+    '<div class="acts">' + (lc === 'si' ? '<button class="infobtn" data-info aria-expanded="false" aria-label="Info" title="Info">i</button>' : '<button class="act" data-act="listen">🔊 ' + t('listen') + '</button>') +
     '<button class="act' + (isSaved() ? ' on' : '') + '" data-act="save">' + (isSaved() ? '★ ' + t('unsave') : '☆ ' + t('save')) + '</button>' +
-    '<button class="act" data-act="copy">⧉ ' + t('copy') + '</button></div></header>';
+    '<button class="act" data-act="copy">⧉ ' + t('copy') + '</button></div>' + (lc === 'si' ? '<p class="infotext" hidden>' + t('siAudio') + '</p>' : '') + '</header>';
   h += '<div id="didyou"></div>';
   if(R.r.asked) h += '<p class="asked">' + t('asked') + ' «' + esc(R.r.asked) + '» · ' + t('alsoSee') + ' <button class="linkbtn inline" data-w="' + esc(R.r.asked) + '" data-exact="1">' + esc(R.r.asked) + '</button></p>';
   const sv = S.saved.find(x => x.w === R.r.title && x.l === R.cur);
@@ -595,6 +595,8 @@ function openNote(w, l, li){
 }
 
 document.addEventListener('click', e => {
+  const ib = e.target.closest('[data-info]');
+  if(ib){ const p = ib.closest('header').querySelector('.infotext'); p.hidden = !p.hidden; ib.setAttribute('aria-expanded', !p.hidden); ib.classList.toggle('on', !p.hidden); return; }
   const b = e.target.closest('[data-surprise],[data-enable],[data-review],[data-rreveal],[data-rknew],[data-ragain],[data-noteopen],[data-notesave]');
   if(!b) return;
   const d = b.dataset;

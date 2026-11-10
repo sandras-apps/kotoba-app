@@ -199,3 +199,8 @@ body.welcoming .top{border-bottom-color:transparent}
 #set .seg{flex-wrap:wrap}
 .act.busy{opacity:.6}
 #toastbar{line-height:1.45}
+
+/* (i) note for languages without audio */
+.infobtn{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--pri);font-weight:700;font-style:italic;font-family:Georgia,serif;font-size:1.15rem}
+.infobtn:hover,.infobtn.on{border-color:var(--pri);background:var(--soft)}
+.infotext{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--soft);color:var(--ink);max-width:560px}
