@@ -23,7 +23,7 @@ const TXT = {
   it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
     nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',
     copy:'Copia', copied:'Copiata!', more:'Mostra altri', notFound:'Non trovo', maybe:'Forse cercavi:', noLang:'Questa parola esiste, ma non in una delle tue lingue.',
-    also:'Esiste in:', net:'Non riesco a collegarmi. Controlla la connessione e riprova.', loading:'Cerco…', via:'Passando dall’inglese:',
+    also:'Esiste in:', net:'Non riesco a collegarmi. Controlla la connessione e riprova.', retry:'Riprova', wotdFail:'Non riesco a caricare la parola del giorno.', loading:'Cerco…', via:'Passando dall’inglese:',
     noTrans:'Nessuna traduzione trovata nelle tue lingue.', noNyms:'Wiktionary non ha ancora sinonimi o contrari per questa parola.', forms:'Forme', notes:'Note d’uso',
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', PT:'Portogallo', BR:'Brasile', UK:'Regno Unito', US:'Stati Uniti', FR:'Francia', CA:'Canada', simp:'Semplificato', trad:'Tradizionale',
@@ -51,7 +51,7 @@ const TXT = {
   en: {ph:'Type a word…', go:'Search', recent:'Recent', saved:'Saved', meaning:'Meaning', syn:'Synonyms', ant:'Opposites',
     nyms:'Synonyms & opposites', trans:'Translations', rel:'Related words', help:'Helpers', all:'All', listen:'Listen', save:'Save', unsave:'Saved',
     copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
-    also:'It exists in:', net:'I can’t connect. Check your connection and try again.', loading:'Searching…', via:'Going through English:',
+    also:'It exists in:', net:'I can’t connect. Check your connection and try again.', retry:'Try again', wotdFail:'I can’t load the word of the day.', loading:'Searching…', via:'Going through English:',
     noTrans:'No translations found in your languages.', noNyms:'Wiktionary has no synonyms or opposites for this word yet.', forms:'Forms', notes:'Usage notes',
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages',
     both:'Both', ES:'Spain', LA:'Latin America', PT:'Portugal', BR:'Brazil', UK:'United Kingdom', US:'United States', FR:'France', CA:'Canada', simp:'Simplified', trad:'Traditional',
@@ -81,6 +81,7 @@ const POS_IT = {Noun:'Sostantivo', Verb:'Verbo', Adjective:'Aggettivo', Adverb:'
   Interjection:'Interiezione', 'Proper noun':'Nome proprio', Numeral:'Numerale', Article:'Articolo', Determiner:'Determinante', Particle:'Particella', Phrase:'Frase',
   Idiom:'Modo di dire', Proverb:'Proverbio', Definitions:'Significati', Prefix:'Prefisso', Suffix:'Suffisso', Classifier:'Classificatore', Counter:'Contatore'};
 const t = k => TXT[S.ui][k];
+const netMsg = () => t('net') + (Core.lastError() ? ' (' + Core.lastError() + ')' : '');
 const posName = n => { n = n.replace(/ \d+$/, ''); return S.ui === 'it' ? (POS_IT[n] || n) : n; };
 const langName = c => { const L = Core.BY_C[c]; return S.ui === 'it' ? L.it : L.wk; };
 const out = $('#out'), input = $('#q'), sug = $('#sug');
@@ -158,7 +159,7 @@ async function search(w, hint, exact){
   const my = ++token; input.value = w; sug.hidden = true;
   message('<span class="spin"></span>' + t('loading'));
   let r;
-  try{ r = await Core.lookup(w, S.langs, exact); }catch(e){ if(my === token) message(t('net')); return; }
+  try{ r = await Core.lookup(w, S.langs, exact); }catch(e){ if(my === token) message(netMsg()); return; }
   if(my !== token) return;
   if(!r){
     const [sg0, scr] = await Promise.all([Core.suggest(w, S.langs), Core.scriptSuggest(w, S.langs).catch(() => [])]);
@@ -307,7 +308,7 @@ async function loadTrans(){
     word = pv.w; wantPos = pv.pos; R.pivot = pv.w;
   }
   let groups = [];
-  try{ groups = await Core.translations(word, targets); }catch(e){ if(my === token) box.innerHTML = '<p class="muted">' + t('net') + '</p>'; return; }
+  try{ groups = await Core.translations(word, targets); }catch(e){ if(my === token) box.innerHTML = '<p class="muted">' + netMsg() + '</p>'; return; }
   if(my !== token || !$('#trbox')) return;
   if(wantPos){ const m = groups.filter(g => g.pos.replace(/ \d+$/, '') === wantPos); if(m.length) groups = m; }
   let h = '';
@@ -350,10 +351,10 @@ const LLQ = {it: 'Q652', en: 'Q1860', es: 'Q1321', zh: 'Q9192', ja: 'Q5287', fr:
 async function linguaLibre(word, lc){
   const C = 'https://commons.wikimedia.org/w/api.php?format=json&formatversion=2&origin=*&action=query';
   try{
-    const r = await (await fetch(C + '&list=search&srnamespace=6&srlimit=10&srsearch=' + encodeURIComponent('intitle:"LL-' + LLQ[lc] + '" intitle:"' + word + '"'))).json();
+    const r = await (await Core.wfetch(C + '&list=search&srnamespace=6&srlimit=10&srsearch=' + encodeURIComponent('intitle:"LL-' + LLQ[lc] + '" intitle:"' + word + '"'))).json();
     const f = ((r.query || {}).search || []).map(x => x.title).find(ti => ti.endsWith('-' + word + '.wav') || ti.endsWith('-' + word + '.ogg'));
     if(!f) return null;
-    const i = await (await fetch(C + '&prop=imageinfo&iiprop=url&titles=' + encodeURIComponent(f))).json();
+    const i = await (await Core.wfetch(C + '&prop=imageinfo&iiprop=url&titles=' + encodeURIComponent(f))).json();
     return ((i.query.pages[0].imageinfo || [])[0] || {}).url || null;
   }catch(e){ return null; }
 }
@@ -607,6 +608,7 @@ const gloss = E => { const s0 = E.pos[0] && E.pos[0].senses[0]; return s0 ? s0.h
 
 /* ===== word of the day ===== */
 async function loadWotd(){
+  Core.clearError();
   const my = token, day = new Date().toISOString().slice(0, 10);
   let W = store.get('wotd3', null);
   if(!W || W.d !== day || !S.langs.includes(W.l) || W.ui !== S.ui){
@@ -620,7 +622,10 @@ async function loadWotd(){
       if(!res && i === 0){ try{ res = await Core.randomWord(l, Math.random); }catch(e){} }
     }
     const b0 = $('#wotd');
-    if(!res){ if(b0 && my === token) b0.hidden = true; return; }
+    if(!res){
+      if(b0 && my === token) b0.innerHTML = '<h2>✨ ' + t('wotd') + '</h2><p class="muted">' + t('wotdFail') + (Core.lastError() ? ' (' + esc(Core.lastError()) + ')' : '') + '</p><button class="act" data-wotdretry>↻ ' + t('retry') + '</button>';
+      return;
+    }
     let g = gloss(res.E);
     if(S.ui === 'it'){ const im = await Core.itMeanings([res.w], l).catch(() => null); if(im) g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
     W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g, ui: S.ui};
@@ -634,10 +639,11 @@ async function loadWotd(){
   box.hidden = false;
 }
 async function surprise(b){
+  Core.clearError();
   const l = S.langs[Math.floor(Math.random() * S.langs.length)];
   b.disabled = true; b.innerHTML = '<span class="spin"></span>' + t('loading');
   let res = null; try{ res = await Core.randomWord(l, Math.random); }catch(e){}
-  if(res) search(res.w, l, true); else { b.disabled = false; b.textContent = t('surprise'); toast(t('net')); }
+  if(res) search(res.w, l, true); else { b.disabled = false; b.textContent = t('surprise'); toast(netMsg()); }
 }
 
 /* ===== review (flashcards from favourite words) ===== */
@@ -679,6 +685,7 @@ function openNote(w, l, li){
 
 document.addEventListener('click', e => {
   if(e.target.closest('[data-opensettings]')){ openSettings(); return; }
+  if(e.target.closest('[data-wotdretry]')){ const b = $('#wotd'); b.innerHTML = '<h2>✨ ' + t('wotd') + '</h2><p class="muted"><span class="spin"></span>' + t('loading') + '</p>'; loadWotd(); return; }
   const ib = e.target.closest('[data-info]');
   if(ib){ const p = ib.closest('header').querySelector('.infotext'); p.hidden = !p.hidden; ib.setAttribute('aria-expanded', !p.hidden); ib.classList.toggle('on', !p.hidden); return; }
   const b = e.target.closest('[data-surprise],[data-enable],[data-review],[data-rreveal],[data-rknew],[data-ragain],[data-noteopen],[data-notesave]');

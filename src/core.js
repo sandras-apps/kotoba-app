@@ -19,6 +19,21 @@ const BY_WK = Object.fromEntries(LANGS.map(l => [l.wk, l]));
 const BY_C  = Object.fromEntries(LANGS.map(l => [l.c, l]));
 const API = 'https://en.wiktionary.org/w/api.php';
 const cache = new Map();
+/* Every request goes through here: identifies the app to Wikimedia (as their API rules ask),
+   gives up after 15 s instead of hanging, and remembers the last problem so the app can say what went wrong. */
+const APP_UA = 'Kotoba/1.0 (https://sandras-apps.github.io/kotoba-app/)';
+let lastErr = '';
+async function wfetch(url){
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 15000);
+  try{
+    let r;
+    try{ r = await fetch(url, {headers: {'Api-User-Agent': APP_UA}, signal: ctl.signal}); }
+    catch(e){ if(ctl.signal.aborted) throw new Error('timeout'); r = await fetch(url, {signal: ctl.signal}); }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r;
+  }catch(e){ lastErr = ctl.signal.aborted ? 'timeout' : (e.message || 'network'); throw e; }
+  finally{ clearTimeout(tm); }
+}
 
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function txt(el){
@@ -67,7 +82,7 @@ function region(s, lc){
 async function getDoc(title){
   if(cache.has(title)) return cache.get(title);
   const p = (async () => {
-    const r = await fetch(API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(title));
+    const r = await wfetch(API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(title));
     if(!r.ok) throw new Error('network');
     const j = await r.json();
     if(j.error) return null;
@@ -86,14 +101,14 @@ const SCRIPT = {zh:/[\u3400-\u9FFF]/, ja:/[\u3040-\u30FF\u3400-\u9FFF]/, si:/[\u
 async function suggest(q, codes){
   let titles;
   try{
-    const r = await fetch(API + '?action=opensearch&limit=14&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
+    const r = await wfetch(API + '?action=opensearch&limit=14&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
     titles = (await r.json())[1] || [];
   }catch(e){ return []; }
   if(!titles.length || !codes || !codes.length) return titles.map(w => ({w, langs: []}));
   const cats = codes.flatMap(c => ['Category:' + BY_C[c].wk + ' lemmas', 'Category:' + BY_C[c].wk + ' non-lemma forms']).join('|');
   let pages;
   try{
-    const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&prop=categories&cllimit=max&clcategories=' + encodeURIComponent(cats) + '&titles=' + encodeURIComponent(titles.join('|')));
+    const r = await wfetch(API + '?action=query&format=json&formatversion=2&origin=*&prop=categories&cllimit=max&clcategories=' + encodeURIComponent(cats) + '&titles=' + encodeURIComponent(titles.join('|')));
     pages = ((await r.json()).query || {}).pages || [];
   }catch(e){ return titles.map(w => ({w, langs: []})); }
   const by = {};
@@ -346,7 +361,7 @@ async function randomWord(code, rnd){
     const pre = P.pre ? P.pre[Math.floor(rnd() * P.pre.length)] : LAT[Math.floor(rnd() * LAT.length)] + VOW[Math.floor(rnd() * VOW.length)];
     let list = [];
     try{
-      const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&list=categorymembers&cmtype=page&cmnamespace=0&cmlimit=40&cmtitle=' +
+      const r = await wfetch(API + '?action=query&format=json&formatversion=2&origin=*&list=categorymembers&cmtype=page&cmnamespace=0&cmlimit=40&cmtitle=' +
         encodeURIComponent('Category:' + cat) + '&cmstartsortkeyprefix=' + encodeURIComponent(pre));
       list = (((await r.json()).query || {}).categorymembers || []).map(m => m.title).filter(w => ok.test(w));
     }catch(e){ return null; }
@@ -405,7 +420,7 @@ function kanaGuesses(q){
 }
 const plainLatin = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/th/g, 't').replace(/dh/g, 'd').replace(/v/g, 'w').replace(/(.)\1/g, '$1').replace(/[^a-z]/g, '');
 async function opensearch(q, n){
-  try{ const r = await fetch(API + '?action=opensearch&limit=' + n + '&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q)); return (await r.json())[1] || []; }
+  try{ const r = await wfetch(API + '?action=opensearch&limit=' + n + '&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q)); return (await r.json())[1] || []; }
   catch(e){ return []; }
 }
 /* Words in other scripts that match what was typed in Latin letters: [{w, tr, langs:[{c}]}] */
@@ -429,7 +444,7 @@ async function scriptSuggest(q, codes){
     let titles = [];
     for(const v of variants){
       try{
-        const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&list=search&srlimit=6&srnamespace=0&srprop=&srsearch=' + encodeURIComponent(v + ' incategory:"Sinhalese lemmas"'));
+        const r = await wfetch(API + '?action=query&format=json&formatversion=2&origin=*&list=search&srlimit=6&srnamespace=0&srprop=&srsearch=' + encodeURIComponent(v + ' incategory:"Sinhalese lemmas"'));
         titles = titles.concat((((await r.json()).query || {}).search || []).map(x => x.title));
       }catch(e){}
     }
@@ -478,7 +493,7 @@ function itSense(li, out){
 function itDoc(w){
   if(!itCache.has(w)) itCache.set(w, (async () => {
     try{
-      const r = await fetch(IT_API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(w));
+      const r = await wfetch(IT_API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(w));
       const j = await r.json(); if(j.error) return null;
       return new DOMParser().parseFromString(j.parse.text, 'text/html').body.firstElementChild;
     }catch(e){ return null; }
@@ -508,4 +523,4 @@ async function itMeanings(words, lc){
   }
   return null;
 }
-const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, itMeanings, esc, region, VARIANTS};
+const Core = {wfetch, lastError: () => lastErr, clearError: () => { lastErr = ''; }, LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, itMeanings, esc, region, VARIANTS};
