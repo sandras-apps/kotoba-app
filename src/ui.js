@@ -23,7 +23,7 @@ const TXT = {
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'forma',
     favs:'Le mie parole', favsBtn:'Parole preferite', favsEmpty:'Non hai ancora parole preferite. Quando trovi una parola che ti piace, tocca ☆ Salva e la ritrovi qui.',
     allL:'Tutte', removed:'Tolta dalle preferite.', undo:'Annulla', copyList:'Copia la lista', remove:'Togli', seeAll:'Vedi tutte', back:'← Indietro',
     wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
@@ -38,7 +38,7 @@ const TXT = {
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
     both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'form',
     favs:'My words', favsBtn:'Favourite words', favsEmpty:'No favourite words yet. When you find a word you like, tap ☆ Save and it will be here.',
     allL:'All', removed:'Removed from favourites.', undo:'Undo', copyList:'Copy the list', remove:'Remove', seeAll:'See all', back:'← Back',
     wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
@@ -77,6 +77,13 @@ function wordChips(list){
   return list.map(x => '<button class="chip plain" data-w="' + esc(x.w) + '" data-l="' + (x.l || '') + '">' + esc(x.w) +
     (x.l ? '<span class="cq">' + x.l.toUpperCase() + '</span>' : '') + '</button>').join('');
 }
+/* A suggestion: the word, then one button per language it exists in. */
+function sugRow(x){
+  const one = x.langs.length === 1 ? x.langs[0].c : '';
+  return '<div class="srow"><button type="button" class="sw" data-w="' + esc(x.w) + '" data-l="' + one + '">' + esc(x.w) + '</button>' +
+    '<span class="slangs">' + x.langs.map(l => '<button type="button" class="sl" data-w="' + esc(x.w) + '" data-l="' + l.c + '">' +
+      esc(langName(l.c)) + (l.form ? ' <i>· ' + t('form') + '</i>' : '') + '</button>').join('') + '</span></div>';
+}
 function scriptOf(w, avail){
   const has = c => avail.includes(c);
   if(/[඀-෿]/.test(w) && has('si')) return 'si';
@@ -105,9 +112,9 @@ async function search(w, hint){
   try{ r = await Core.lookup(w); }catch(e){ if(my === token) message(t('net')); return; }
   if(my !== token) return;
   if(!r){
-    const sg = (await Core.suggest(w)).filter(x => x !== w);
+    const sg = (await Core.suggest(w, S.langs)).filter(x => x.w !== w);
     if(my !== token) return;
-    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="chips">' + wordChips(sg.map(x => ({w: x}))) + '</div>' : ''));
+    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="slist">' + sg.map(sugRow).join('') + '</div>' : ''));
   }
   const avail = S.langs.filter(c => r.entries[c]);
   if(!avail.length){
@@ -304,13 +311,14 @@ input.addEventListener('input', () => {
   clearTimeout(st); const v = input.value.trim();
   if(v.length < 2){ sug.hidden = true; return; }
   st = setTimeout(async () => {
-    const list = await Core.suggest(v);
+    const list = await Core.suggest(v, S.langs);
     if(input.value.trim() !== v || document.activeElement !== input) return;
-    sug.innerHTML = list.map(x => '<button type="button" data-w="' + esc(x) + '" data-l="">' + esc(x) + '</button>').join('');
+    sug.innerHTML = list.map(sugRow).join('');
     sug.hidden = !list.length;
   }, 220);
 });
-sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w); } });
+sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w, b.dataset.l || undefined); } });
+sug.addEventListener('mousedown', e => e.preventDefault());
 input.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 180));
 $('#brand').addEventListener('click', e => { e.preventDefault(); if(document.body.classList.contains('welcoming')) return; home(); input.focus(); });
 $('#bfav').addEventListener('click', () => { if(!document.body.classList.contains('welcoming')) favs(); });

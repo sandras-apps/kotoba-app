@@ -72,11 +72,35 @@ async function getDoc(title){
   p.catch(() => cache.delete(title));
   return p;
 }
-async function suggest(q){
+/* Languages written in their own script: a Latin-letter title there is only a romanisation, so it is not offered. */
+const SCRIPT = {zh:/[\u3400-\u9FFF]/, ja:/[\u3040-\u30FF\u3400-\u9FFF]/, si:/[\u0D80-\u0DFF]/, ko:/[\uAC00-\uD7AF]/, ru:/[\u0400-\u04FF]/, ar:/[\u0600-\u06FF]/, hi:/[\u0900-\u097F]/};
+/* Suggestions while typing: [{w, langs:[{c, form}]}], only words that exist in one of `codes`.
+   form = true when the word is only an inflected form there (plural, conjugation…). */
+async function suggest(q, codes){
+  let titles;
   try{
-    const r = await fetch(API + '?action=opensearch&limit=7&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
-    return (await r.json())[1] || [];
+    const r = await fetch(API + '?action=opensearch&limit=14&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
+    titles = (await r.json())[1] || [];
   }catch(e){ return []; }
+  if(!titles.length || !codes || !codes.length) return titles.map(w => ({w, langs: []}));
+  const cats = codes.flatMap(c => ['Category:' + BY_C[c].wk + ' lemmas', 'Category:' + BY_C[c].wk + ' non-lemma forms']).join('|');
+  let pages;
+  try{
+    const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&prop=categories&cllimit=max&clcategories=' + encodeURIComponent(cats) + '&titles=' + encodeURIComponent(titles.join('|')));
+    pages = ((await r.json()).query || {}).pages || [];
+  }catch(e){ return titles.map(w => ({w, langs: []})); }
+  const by = {};
+  pages.forEach(p => {
+    const m = {};
+    (p.categories || []).forEach(x => {
+      const k = x.title.match(/^Category:(.+) (lemmas|non-lemma forms)$/); if(!k) return;
+      const L = BY_WK[k[1]]; if(!L || (SCRIPT[L.c] && !SCRIPT[L.c].test(p.title))) return;
+      m[L.c] = (m[L.c] === false) ? false : k[2] !== 'lemmas';
+      if(k[2] === 'lemmas') m[L.c] = false;
+    });
+    by[p.title] = codes.filter(c => c in m).map(c => ({c, form: m[c]}));
+  });
+  return titles.map(w => ({w, langs: by[w] || []})).filter(x => x.langs.length).slice(0, 8);
 }
 function sections(root){
   const m = new Map(); let cur = null;

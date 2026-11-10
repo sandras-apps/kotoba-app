@@ -31,8 +31,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
 #q{flex:1;min-width:0;font:inherit;font-size:1.25rem;padding:12px 16px;border:2px solid var(--pfill);border-radius:14px;background:var(--card);color:var(--ink)}
 #go{background:var(--pfill);color:var(--ink);font-weight:700;padding:0 20px;border-radius:14px}
 #sug{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:var(--card);border:2px solid var(--pri);border-radius:14px;overflow:hidden;z-index:6}
-#sug button{display:block;width:100%;text-align:left;padding:10px 16px;font-size:1.1rem}
-#sug button:hover{background:var(--soft)}
 main{padding:18px 0 40px;min-height:60vh}
 .hint{color:var(--muted);font-size:1.05rem}
 .shelf h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px}
@@ -145,6 +143,19 @@ body.welcoming .top{border-bottom-color:transparent}
 .fx:hover{background:var(--soft);color:var(--ant)}
 .toast{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--pfill);border-radius:14px;padding:10px 16px;margin-bottom:12px;font-weight:700}
 .toast button{color:var(--pri);text-decoration:underline;text-underline-offset:4px;font-weight:700}
+
+/* suggestions with languages */
+#sug{max-height:70vh;overflow-y:auto}
+.srow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 12px}
+#sug .srow+.srow{border-top:1px solid var(--line)}
+.sw{font-size:1.15rem;font-weight:700;padding:4px 6px;border-radius:8px;text-align:left}
+.sw:hover{background:var(--soft)}
+.slangs{display:flex;flex-wrap:wrap;gap:6px}
+.sl{font-size:.85rem;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--ink);min-height:32px}
+.sl i{font-weight:400;color:var(--muted)}
+.sl:hover{background:var(--pfill)}
+.slist{background:var(--card);border-radius:14px;margin-top:8px}
+.slist .srow+.srow{border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -234,11 +245,35 @@ async function getDoc(title){
   p.catch(() => cache.delete(title));
   return p;
 }
-async function suggest(q){
+/* Languages written in their own script: a Latin-letter title there is only a romanisation, so it is not offered. */
+const SCRIPT = {zh:/[\u3400-\u9FFF]/, ja:/[\u3040-\u30FF\u3400-\u9FFF]/, si:/[\u0D80-\u0DFF]/, ko:/[\uAC00-\uD7AF]/, ru:/[\u0400-\u04FF]/, ar:/[\u0600-\u06FF]/, hi:/[\u0900-\u097F]/};
+/* Suggestions while typing: [{w, langs:[{c, form}]}], only words that exist in one of `codes`.
+   form = true when the word is only an inflected form there (plural, conjugation…). */
+async function suggest(q, codes){
+  let titles;
   try{
-    const r = await fetch(API + '?action=opensearch&limit=7&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
-    return (await r.json())[1] || [];
+    const r = await fetch(API + '?action=opensearch&limit=14&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
+    titles = (await r.json())[1] || [];
   }catch(e){ return []; }
+  if(!titles.length || !codes || !codes.length) return titles.map(w => ({w, langs: []}));
+  const cats = codes.flatMap(c => ['Category:' + BY_C[c].wk + ' lemmas', 'Category:' + BY_C[c].wk + ' non-lemma forms']).join('|');
+  let pages;
+  try{
+    const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&prop=categories&cllimit=max&clcategories=' + encodeURIComponent(cats) + '&titles=' + encodeURIComponent(titles.join('|')));
+    pages = ((await r.json()).query || {}).pages || [];
+  }catch(e){ return titles.map(w => ({w, langs: []})); }
+  const by = {};
+  pages.forEach(p => {
+    const m = {};
+    (p.categories || []).forEach(x => {
+      const k = x.title.match(/^Category:(.+) (lemmas|non-lemma forms)$/); if(!k) return;
+      const L = BY_WK[k[1]]; if(!L || (SCRIPT[L.c] && !SCRIPT[L.c].test(p.title))) return;
+      m[L.c] = (m[L.c] === false) ? false : k[2] !== 'lemmas';
+      if(k[2] === 'lemmas') m[L.c] = false;
+    });
+    by[p.title] = codes.filter(c => c in m).map(c => ({c, form: m[c]}));
+  });
+  return titles.map(w => ({w, langs: by[w] || []})).filter(x => x.langs.length).slice(0, 8);
 }
 function sections(root){
   const m = new Map(); let cur = null;
@@ -462,7 +497,7 @@ const TXT = {
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'forma',
     favs:'Le mie parole', favsBtn:'Parole preferite', favsEmpty:'Non hai ancora parole preferite. Quando trovi una parola che ti piace, tocca ☆ Salva e la ritrovi qui.',
     allL:'Tutte', removed:'Tolta dalle preferite.', undo:'Annulla', copyList:'Copia la lista', remove:'Togli', seeAll:'Vedi tutte', back:'← Indietro',
     wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
@@ -477,7 +512,7 @@ const TXT = {
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
     both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'form',
     favs:'My words', favsBtn:'Favourite words', favsEmpty:'No favourite words yet. When you find a word you like, tap ☆ Save and it will be here.',
     allL:'All', removed:'Removed from favourites.', undo:'Undo', copyList:'Copy the list', remove:'Remove', seeAll:'See all', back:'← Back',
     wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
@@ -516,6 +551,13 @@ function wordChips(list){
   return list.map(x => '<button class="chip plain" data-w="' + esc(x.w) + '" data-l="' + (x.l || '') + '">' + esc(x.w) +
     (x.l ? '<span class="cq">' + x.l.toUpperCase() + '</span>' : '') + '</button>').join('');
 }
+/* A suggestion: the word, then one button per language it exists in. */
+function sugRow(x){
+  const one = x.langs.length === 1 ? x.langs[0].c : '';
+  return '<div class="srow"><button type="button" class="sw" data-w="' + esc(x.w) + '" data-l="' + one + '">' + esc(x.w) + '</button>' +
+    '<span class="slangs">' + x.langs.map(l => '<button type="button" class="sl" data-w="' + esc(x.w) + '" data-l="' + l.c + '">' +
+      esc(langName(l.c)) + (l.form ? ' <i>· ' + t('form') + '</i>' : '') + '</button>').join('') + '</span></div>';
+}
 function scriptOf(w, avail){
   const has = c => avail.includes(c);
   if(/[඀-෿]/.test(w) && has('si')) return 'si';
@@ -544,9 +586,9 @@ async function search(w, hint){
   try{ r = await Core.lookup(w); }catch(e){ if(my === token) message(t('net')); return; }
   if(my !== token) return;
   if(!r){
-    const sg = (await Core.suggest(w)).filter(x => x !== w);
+    const sg = (await Core.suggest(w, S.langs)).filter(x => x.w !== w);
     if(my !== token) return;
-    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="chips">' + wordChips(sg.map(x => ({w: x}))) + '</div>' : ''));
+    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="slist">' + sg.map(sugRow).join('') + '</div>' : ''));
   }
   const avail = S.langs.filter(c => r.entries[c]);
   if(!avail.length){
@@ -743,13 +785,14 @@ input.addEventListener('input', () => {
   clearTimeout(st); const v = input.value.trim();
   if(v.length < 2){ sug.hidden = true; return; }
   st = setTimeout(async () => {
-    const list = await Core.suggest(v);
+    const list = await Core.suggest(v, S.langs);
     if(input.value.trim() !== v || document.activeElement !== input) return;
-    sug.innerHTML = list.map(x => '<button type="button" data-w="' + esc(x) + '" data-l="">' + esc(x) + '</button>').join('');
+    sug.innerHTML = list.map(sugRow).join('');
     sug.hidden = !list.length;
   }, 220);
 });
-sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w); } });
+sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w, b.dataset.l || undefined); } });
+sug.addEventListener('mousedown', e => e.preventDefault());
 input.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 180));
 $('#brand').addEventListener('click', e => { e.preventDefault(); if(document.body.classList.contains('welcoming')) return; home(); input.focus(); });
 $('#bfav').addEventListener('click', () => { if(!document.body.classList.contains('welcoming')) favs(); });
