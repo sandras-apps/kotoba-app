@@ -1215,7 +1215,7 @@ const gloss = E => { const s0 = E.pos[0] && E.pos[0].senses[0]; return s0 ? s0.h
 /* ===== word of the day ===== */
 async function loadWotd(){
   const my = token, day = new Date().toISOString().slice(0, 10);
-  let W = store.get('wotd', null);
+  let W = store.get('wotd2', null);
   if(!W || W.d !== day || !S.langs.includes(W.l)){
     const rnd = seeded(day + S.langs.join());
     const l = S.langs[Math.floor(rnd() * S.langs.length)];
@@ -1223,7 +1223,7 @@ async function loadWotd(){
     try{ res = await Core.randomWord(l, rnd); }catch(e){}
     if(!res) return;
     W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g: gloss(res.E)};
-    store.set('wotd', W);
+    store.set('wotd2', W);
   }
   const box = $('#wotd'); if(my !== token || !box) return;
   box.innerHTML = '<h2>✨ ' + t('wotd') + ' · ' + esc(langName(W.l)) + '</h2>' +
