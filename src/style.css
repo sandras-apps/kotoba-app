@@ -141,5 +141,5 @@ body.welcoming .top{border-bottom-color:transparent}
 .sl:hover{background:var(--pfill)}
 .slist{background:var(--card);border-radius:14px;margin-top:8px}
 .slist .srow+.srow{border-top:1px solid var(--line)}
-.snote{margin:0;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft);color:var(--muted);font-size:.92rem;line-height:1.45}
+.snote{position:sticky;bottom:0;margin:0;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft);color:var(--muted);font-size:.92rem;line-height:1.45}
 .snote b{color:var(--ink)}
