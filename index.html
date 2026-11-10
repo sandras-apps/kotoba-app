@@ -156,6 +156,8 @@ body.welcoming .top{border-bottom-color:transparent}
 .sl:hover{background:var(--pfill)}
 .slist{background:var(--card);border-radius:14px;margin-top:8px}
 .slist .srow+.srow{border-top:1px solid var(--line)}
+.snote{margin:0;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft);color:var(--muted);font-size:.92rem;line-height:1.45}
+.snote b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -497,7 +499,7 @@ const TXT = {
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'forma',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante', formNote:'<b>variante</b> = non è la parola base, ma un plurale, un femminile o un verbo coniugato di un\u2019altra parola.',
     favs:'Le mie parole', favsBtn:'Parole preferite', favsEmpty:'Non hai ancora parole preferite. Quando trovi una parola che ti piace, tocca ☆ Salva e la ritrovi qui.',
     allL:'Tutte', removed:'Tolta dalle preferite.', undo:'Annulla', copyList:'Copia la lista', remove:'Togli', seeAll:'Vedi tutte', back:'← Indietro',
     wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
@@ -512,7 +514,7 @@ const TXT = {
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
     both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'form',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant', formNote:'<b>variant</b> = not the base word, but a plural, feminine or conjugated verb of another word.',
     favs:'My words', favsBtn:'Favourite words', favsEmpty:'No favourite words yet. When you find a word you like, tap ☆ Save and it will be here.',
     allL:'All', removed:'Removed from favourites.', undo:'Undo', copyList:'Copy the list', remove:'Remove', seeAll:'See all', back:'← Back',
     wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
@@ -558,6 +560,9 @@ function sugRow(x){
     '<span class="slangs">' + x.langs.map(l => '<button type="button" class="sl" data-w="' + esc(x.w) + '" data-l="' + l.c + '">' +
       esc(langName(l.c)) + (l.form ? ' <i>· ' + t('form') + '</i>' : '') + '</button>').join('') + '</span></div>';
 }
+function sugList(list){
+  return list.map(sugRow).join('') + (list.some(x => x.langs.some(l => l.form)) ? '<p class="snote">' + t('formNote') + '</p>' : '');
+}
 function scriptOf(w, avail){
   const has = c => avail.includes(c);
   if(/[඀-෿]/.test(w) && has('si')) return 'si';
@@ -588,7 +593,7 @@ async function search(w, hint){
   if(!r){
     const sg = (await Core.suggest(w, S.langs)).filter(x => x.w !== w);
     if(my !== token) return;
-    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="slist">' + sg.map(sugRow).join('') + '</div>' : ''));
+    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="slist">' + sugList(sg) + '</div>' : ''));
   }
   const avail = S.langs.filter(c => r.entries[c]);
   if(!avail.length){
@@ -787,7 +792,7 @@ input.addEventListener('input', () => {
   st = setTimeout(async () => {
     const list = await Core.suggest(v, S.langs);
     if(input.value.trim() !== v || document.activeElement !== input) return;
-    sug.innerHTML = list.map(sugRow).join('');
+    sug.innerHTML = sugList(list);
     sug.hidden = !list.length;
   }, 220);
 });
