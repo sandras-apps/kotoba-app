@@ -21,14 +21,11 @@ const API = 'https://en.wiktionary.org/w/api.php';
 const cache = new Map();
 /* Every request goes through here: identifies the app to Wikimedia (as their API rules ask),
    gives up after 15 s instead of hanging, and remembers the last problem so the app can say what went wrong. */
-const APP_UA = 'Kotoba/1.0 (https://sandras-apps.github.io/kotoba-app/)';
 let lastErr = '';
 async function wfetch(url){
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 15000);
   try{
-    let r;
-    try{ r = await fetch(url, {headers: {'Api-User-Agent': APP_UA}, signal: ctl.signal}); }
-    catch(e){ if(ctl.signal.aborted) throw new Error('timeout'); r = await fetch(url, {signal: ctl.signal}); }
+    const r = await fetch(url, {signal: ctl.signal});
     if(!r.ok) throw new Error('HTTP ' + r.status);
     return r;
   }catch(e){ lastErr = ctl.signal.aborted ? 'timeout' : (e.message || 'network'); throw e; }
@@ -98,7 +95,13 @@ async function getDoc(title){
 const SCRIPT = {zh:/[\u3400-\u9FFF]/, ja:/[\u3040-\u30FF\u3400-\u9FFF]/, si:/[\u0D80-\u0DFF]/, ko:/[\uAC00-\uD7AF]/, ru:/[\u0400-\u04FF]/, ar:/[\u0600-\u06FF]/, hi:/[\u0900-\u097F]/};
 /* Suggestions while typing: [{w, langs:[{c, form}]}], only words that exist in one of `codes`.
    form = true when the word is only an inflected form there (plural, conjugation…). */
+const sugCache = new Map();
 async function suggest(q, codes){
+  const key = q + '|' + (codes || []).join();
+  if(!sugCache.has(key)){ const p = suggest0(q, codes); sugCache.set(key, p); p.then(r => { if(!r.length) sugCache.delete(key); }); }
+  return sugCache.get(key);
+}
+async function suggest0(q, codes){
   let titles;
   try{
     const r = await wfetch(API + '?action=opensearch&limit=14&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
@@ -424,7 +427,13 @@ async function opensearch(q, n){
   catch(e){ return []; }
 }
 /* Words in other scripts that match what was typed in Latin letters: [{w, tr, langs:[{c}]}] */
+const scrCache = new Map();
 async function scriptSuggest(q, codes){
+  const key = q + '|' + codes.filter(c => c === 'ja' || c === 'si').join();
+  if(!scrCache.has(key)) scrCache.set(key, scriptSuggest0(q, codes).catch(() => { scrCache.delete(key); return []; }));
+  return scrCache.get(key);
+}
+async function scriptSuggest0(q, codes){
   if(!/^[a-zA-Zāēīōūâêîôûḷṇṭḍṅñśṣæǣ' -]{2,}$/.test(q)) return [];
   const out = [];
   if(codes.includes('ja')){
@@ -523,4 +532,24 @@ async function itMeanings(words, lc){
   }
   return null;
 }
-const Core = {wfetch, lastError: () => lastErr, clearError: () => { lastErr = ''; }, LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, itMeanings, esc, region, VARIANTS};
+const WORDS = {
+  it: 'sereno luce mare fiaba stella sogno respiro alba tramonto quiete sorriso viaggio vento radice nuvola abbraccio meraviglia silenzio sentiero coraggio gentilezza primavera onda ricordo lanterna giardino pioggia casa pane amicizia',
+  en: 'serendipity wander gentle lantern meadow whisper harbor bloom ember kindness journey quiet sunrise ripple wonder cozy glimmer breeze hearth thrive bright feather willow calm voyage cherish dawn river story garden',
+  es: 'amanecer sobremesa luz mar sueño estrella camino abrazo sonrisa viaje viento lluvia jardín ternura madrugada alegría calma bosque orilla cuento esperanza hogar susurro nube amistad primavera río luna pan ventana',
+  fr: 'lumière rêve étoile voyage sourire jardin pluie douceur aube bonheur chemin nuage flâner câlin forêt rivière lune amitié printemps maison pain vent histoire calme tendresse merveille océan fleur papillon crépuscule',
+  zh: '朋友 月亮 星星 花 水 山 书 茶 家 梦 春天 快乐 平安 旅行 微笑 太阳 雨 风 海 猫 音乐 故事 希望 学习 美丽 温柔 森林 河 米饭 时间',
+  ja: '猫 桜 月 星 海 山 花 本 お茶 夢 春 旅 友達 笑顔 雨 風 森 川 空 光 幸せ 優しい 静か 物語 木漏れ日 朝 音楽 嬉しい 食べる ありがとう',
+  si: 'බල්ලා පූසා වතුර අම්මා තාත්තා ආයුබෝවන් ගෙය හොඳ අකුර අක්කා කකුල කට කඩ ජලය දිය කොඩිය බළලා',
+  ca: 'casa llum mar somni estel amic pluja llibre gat camí pau somriure',
+  de: 'Haus Licht Traum Stern Freund Regen Buch Katze Weg Wald Fernweh gemütlich',
+  pt: 'casa luz mar sonho estrela amigo chuva livro gato saudade caminho sorriso',
+  ru: 'дом свет море звезда друг дождь книга кошка лес мечта',
+  ar: 'بيت نور بحر نجم صديق مطر كتاب قطة قمر سلام',
+  hi: 'घर पानी दोस्त किताब बिल्ली चाँद सूरज फूल नदी शांति',
+  ko: '집 빛 바다 별 친구 비 책 고양이 숲 꿈'
+};
+function pickWord(code, rnd, not){
+  const list = (WORDS[code] || WORDS.en).split(' ').filter(w => w !== not);
+  return list[Math.floor(rnd() * list.length)];
+}
+const Core = {pickWord, wfetch, lastError: () => lastErr, clearError: () => { lastErr = ''; }, LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, itMeanings, esc, region, VARIANTS};

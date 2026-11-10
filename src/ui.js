@@ -19,6 +19,7 @@ const S = {
 function syncLangs(){ S.langs = Core.LANGS.map(L => L.c).filter(c => S.picked.includes(c) || c === S.ui); }
 function setPicked(list){ S.picked = Core.LANGS.map(L => L.c).filter(c => list.includes(c)); store.set('langs', S.picked); syncLangs(); }
 syncLangs();
+const VERSION = '1.2';
 const TXT = {
   it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
     nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',
@@ -341,7 +342,7 @@ async function speak(){
     voices = speechSynthesis.getVoices();
   }
   const has = voices.some(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
-  if(!has){ toast(t(R.cur === 'si' ? 'noVoiceSi' : 'noVoice')); return; }
+  if(voices.length && !has){ toast(t(R.cur === 'si' ? 'noVoiceSi' : 'noVoice')); return; }
   const E = R.r.entries[R.cur], u = new SpeechSynthesisUtterance(E.typed || E.word);
   u.lang = lang; u.voice = voices.find(v => v.lang.replace('_', '-') === lang) || voices.find(v => v.lang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase())); u.rate = 0.85;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
@@ -375,7 +376,7 @@ function renderSettings(){
     '</div>' + varBlocks(S.langs, 'data-var') + '<h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
     '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button>' + extras() +
     '<section class="xcard priv"><h2>' + t('privT') + '</h2><p>' + t('privD') + ' <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">' + t('privL') + '</a></p></section>' +
-    '<button class="done" data-close>' + t('close') + '</button>';
+    '<p class="muted small center">Kotoba ' + VERSION + '</p><button class="done" data-close>' + t('close') + '</button>';
 }
 function openSettings(){
   renderSettings(); const d = $('#set');
@@ -607,43 +608,39 @@ function seeded(str){ let h = 2166136261; for(const ch of str){ h ^= ch.codePoin
 const gloss = E => { const s0 = E.pos[0] && E.pos[0].senses[0]; return s0 ? s0.html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim().slice(0, 110) : ''; };
 
 /* ===== word of the day ===== */
-async function loadWotd(){
-  Core.clearError();
-  const my = token, day = new Date().toISOString().slice(0, 10);
-  let W = store.get('wotd3', null);
-  if(!W || W.d !== day || !S.langs.includes(W.l) || W.ui !== S.ui){
-    const rnd = seeded(day + S.langs.join());
-    const first = S.langs[Math.floor(rnd() * S.langs.length)];
-    const order = [first].concat(S.langs.filter(c => c !== first).sort(() => Math.random() - 0.5));
-    let res = null, l = first;
-    for(let i = 0; i < order.length && !res; i++){
-      l = order[i];
-      try{ res = await Core.randomWord(l, i === 0 ? rnd : Math.random); }catch(e){}
-      if(!res && i === 0){ try{ res = await Core.randomWord(l, Math.random); }catch(e){} }
-    }
-    const b0 = $('#wotd');
-    if(!res){
-      if(b0 && my === token) b0.innerHTML = '<h2>✨ ' + t('wotd') + '</h2><p class="muted">' + t('wotdFail') + (Core.lastError() ? ' (' + esc(Core.lastError()) + ')' : '') + '</p><button class="act" data-wotdretry>↻ ' + t('retry') + '</button>';
-      return;
-    }
-    let g = gloss(res.E);
-    if(S.ui === 'it'){ const im = await Core.itMeanings([res.w], l).catch(() => null); if(im) g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
-    W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g, ui: S.ui};
-    store.set('wotd3', W);
-  }
-  const box = $('#wotd'); if(my !== token || !box) return;
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function drawWotd(W){
+  const box = $('#wotd'); if(!box) return;
   box.innerHTML = '<h2>✨ ' + t('wotd') + ' · ' + esc(langName(W.l)) + '</h2>' +
-    '<button class="wotdbtn" data-w="' + esc(W.w) + '" data-l="' + W.l + '"><span class="ww" lang="' + W.l + '">' + esc(W.s) + '</span>' +
+    '<button class="wotdbtn" data-w="' + esc(W.w) + '" data-l="' + W.l + '" data-exact="1"><span class="ww" lang="' + W.l + '">' + esc(W.s || W.w) + '</span>' +
     (W.tr ? '<span class="ftr">' + esc(W.tr) + '</span>' : '') + (W.g ? '<span class="fg2">' + esc(W.g) + '</span>' : '') +
     '<span class="go">' + t('open') + ' →</span></button>';
-  box.hidden = false;
 }
-async function surprise(b){
-  Core.clearError();
+/* The word is chosen from a list inside the app, so it shows at once even with a bad connection;
+   pronunciation and meaning are added when they arrive. */
+async function loadWotd(){
+  const my = token, day = today();
+  let W = store.get('wotd4', null);
+  if(!W || W.d !== day || !S.langs.includes(W.l) || W.ui !== S.ui){
+    const rnd = seeded(day + S.langs.join());
+    const l = S.langs[Math.floor(rnd() * S.langs.length)];
+    W = {d: day, l, w: Core.pickWord(l, rnd), ui: S.ui};
+    store.set('wotd4', W);
+  }
+  drawWotd(W);
+  if(W.g) return;
+  try{
+    const res = await Core.lookup(W.w, [W.l], true), E = res && res.entries[W.l];
+    if(!E) return;
+    W.s = E.typed || E.word; W.tr = E.tr || ''; W.g = gloss(E);
+    if(S.ui === 'it'){ const im = await Core.itMeanings([W.w], W.l).catch(() => null); if(im) W.g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
+    store.set('wotd4', W);
+    if(my === token) drawWotd(W);
+  }catch(e){}
+}
+function surprise(){
   const l = S.langs[Math.floor(Math.random() * S.langs.length)];
-  b.disabled = true; b.innerHTML = '<span class="spin"></span>' + t('loading');
-  let res = null; try{ res = await Core.randomWord(l, Math.random); }catch(e){}
-  if(res) search(res.w, l, true); else { b.disabled = false; b.textContent = t('surprise'); toast(netMsg()); }
+  search(Core.pickWord(l, Math.random, R ? R.r.title : ''), l, true);
 }
 
 /* ===== review (flashcards from favourite words) ===== */
@@ -691,7 +688,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-surprise],[data-enable],[data-review],[data-rreveal],[data-rknew],[data-ragain],[data-noteopen],[data-notesave]');
   if(!b) return;
   const d = b.dataset;
-  if('surprise' in d) surprise(b);
+  if('surprise' in d) surprise();
   else if(d.enable){ if(!S.langs.includes(d.enable)) setPicked(S.picked.concat(d.enable)); search(d.ew, d.enable); }
   else if('review' in d) startReview();
   else if('rreveal' in d){ RV.open = true; drawReview(); }
@@ -714,4 +711,8 @@ if(!store.get('welcomed', false)) welcome();
 else if(location.hash.length > 1) search(decodeURIComponent(location.hash.slice(1)));
 else home();
 
-if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  const had = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if(had && !reloaded){ reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
+}
