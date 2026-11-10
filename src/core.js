@@ -222,10 +222,10 @@ function senses(ol, P, depth, lc){
 const NOT_POS = /^(Etymology|Pronunciation|References|Further reading|See also|Anagrams|Descendants|Alternative forms|Conjugation|Declension|Inflection|Usage notes|Synonyms|Antonyms|Derived terms|Related terms|Translations|Quotations|Notes|Hyponyms|Hypernyms|Coordinate terms|Compounds|Collocations)/;
 function build(els, lc, title){
   const E = {word: title, lc, tr:'', pron:[], audio:[], pos:[], syn:[], ant:[], rel:[], notes:[], tt:[], tsub:null, tsee:[], see:null};
-  let h = '', P = null;
+  let h = '', P = null, posH = '';
   for(const el of els){
     const hd = el.matches('.mw-heading') && el.querySelector('h3,h4,h5,h6');
-    if(hd){ h = hd.textContent.trim(); continue; }
+    if(hd){ h = hd.textContent.trim(); if(!NOT_POS.test(h)) posH = h.replace(/ \d+$/, ''); continue; }
     const see = el.matches('table[class*="-see"]') ? el : el.querySelector('table[class*="-see"]');
     if(see && !E.see){ const a = [...see.querySelectorAll('a[href^="/wiki/"]')].find(a => /#(Chinese|Japanese)/.test(a.getAttribute('href')) && a.getAttribute('title') && !title.includes(a.getAttribute('title'))); if(a) E.see = a.getAttribute('title'); }
     if(/^Pronunciation/.test(h)){ pron(el, E); continue; }
@@ -236,7 +236,7 @@ function build(els, lc, title){
       senses(el, P, 0, lc); continue;
     }
     const tabs = el.matches('table.translations') ? [el] : [...el.querySelectorAll('table.translations')];
-    tabs.forEach(t => E.tt.push({gloss: t.getAttribute('data-gloss') || '', pos: /^Translations/.test(h) ? (P ? P.name : '') : h, el: t}));
+    tabs.forEach(t => E.tt.push({gloss: t.getAttribute('data-gloss') || '', pos: /^Translations/.test(h) ? (posH || (P ? P.name : '')) : h, el: t}));
     if(!tabs.length && /^Translations/.test(h)){
       const a = el.querySelector('a[href*="/translations"]');
       if(a){ E.tsubAt = E.tt.length; E.tsubPos = P ? P.name : ''; }
