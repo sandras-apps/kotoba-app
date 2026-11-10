@@ -56,7 +56,7 @@ main{padding:18px 0 40px;min-height:60vh}
 .def{margin:0;font-size:1.1rem}
 .def a,.help a[data-w]{color:inherit;text-decoration:underline dotted var(--c);text-underline-offset:4px;cursor:pointer}
 .lb,.rg,.cq,.cg{display:inline-block;font-size:.72rem;font-weight:700;border-radius:6px;padding:1px 7px;margin-right:5px;vertical-align:middle;background:var(--line);color:var(--muted);letter-spacing:.02em}
-.rg-ES{background:#F0DDA8;color:#6A5220}.rg-LA{background:#CFE3D2;color:#3F6149}
+.rg-a{background:#F0DDA8;color:#6A5220}.rg-b{background:#CFE3D2;color:#3F6149}
 .ex{margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--help) 11%,transparent);display:flex;flex-direction:column}
 .ex-t{font-size:1.08rem}.ex-t b{color:var(--pri)}
 .ex-r{color:var(--tr);font-size:.95rem}.ex-m{color:var(--muted);font-size:.95rem}
@@ -194,3 +194,6 @@ body.welcoming .top{border-bottom-color:transparent}
 .rcard.done .big{font-size:3rem}
 .rcard.done h1{margin:4px 0}
 .sw.kb{background:var(--pfill)}
+.sw .ftr{font-weight:400;font-size:.95rem;margin-left:6px}
+.wvars h3{font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
+#set .seg{flex-wrap:wrap}

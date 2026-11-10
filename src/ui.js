@@ -6,7 +6,7 @@ const store = {
 };
 const S = {
   langs: store.get('langs', ['it','en','es','zh','ja','fr','si']),
-  es: store.get('es', 'both'),
+  vars: Object.assign({es: store.get('es', 'both'), pt: 'both', en: 'both', fr: 'both', zh: 'simp'}, store.get('vars', {})),
   ui: store.get('ui', (navigator.language || 'it').startsWith('it') ? 'it' : 'en'),
   size: Math.min(3, Math.max(0, store.get('size', 1))),
   theme: store.get('theme', 'light'),
@@ -20,8 +20,9 @@ const TXT = {
     copy:'Copia', copied:'Copiata!', more:'Mostra altri', notFound:'Non trovo', maybe:'Forse cercavi:', noLang:'Questa parola esiste, ma non in una delle tue lingue.',
     also:'Esiste in:', net:'Non riesco a collegarmi. Controlla la connessione e riprova.', loading:'Cerco…', via:'Passando dall’inglese:',
     noTrans:'Nessuna traduzione trovata nelle tue lingue.', noNyms:'Wiktionary non ha ancora sinonimi o contrari per questa parola.', forms:'Forme', notes:'Note d’uso',
-    wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
-    both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
+    wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue',
+    both:'Entrambi', ES:'Spagna', LA:'America Latina', PT:'Portogallo', BR:'Brasile', UK:'Regno Unito', US:'Stati Uniti', FR:'Francia', CA:'Canada', simp:'Semplificato', trad:'Tradizionale',
+    vq_es:'Quale spagnolo?', vq_pt:'Quale portoghese?', vq_en:'Quale inglese?', vq_fr:'Quale francese?', vq_zh:'Quale scrittura cinese?', via2:'tramite', latinHint:'Giapponese e singalese si possono scrivere anche con lettere latine: neko → 猫, balla → බල්ලා.', inScript:'In altre scritture:', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
     size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
     sizeT:'Dimensione del testo', sizes:['Piccolo','Normale','Grande','Molto grande'],
@@ -41,8 +42,9 @@ const TXT = {
     copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
     also:'It exists in:', net:'I can’t connect. Check your connection and try again.', loading:'Searching…', via:'Going through English:',
     noTrans:'No translations found in your languages.', noNyms:'Wiktionary has no synonyms or opposites for this word yet.', forms:'Forms', notes:'Usage notes',
-    wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
-    both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
+    wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages',
+    both:'Both', ES:'Spain', LA:'Latin America', PT:'Portugal', BR:'Brazil', UK:'United Kingdom', US:'United States', FR:'France', CA:'Canada', simp:'Simplified', trad:'Traditional',
+    vq_es:'Which Spanish?', vq_pt:'Which Portuguese?', vq_en:'Which English?', vq_fr:'Which French?', vq_zh:'Which Chinese script?', via2:'via', latinHint:'Japanese and Sinhala can also be typed with Latin letters: neko → 猫, balla → බල්ලා.', inScript:'In other scripts:', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
     size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
     sizeT:'Text size', sizes:['Small','Normal','Large','Extra large'],
@@ -75,12 +77,22 @@ function applyPrefs(){
   $('#brand').textContent = t('title'); document.title = t('title');
   $('#bsize').title = t('sizeT'); $('#bfav').title = t('favsBtn'); $('#bfav').setAttribute('aria-label', t('favsBtn')); $('#btheme').title = t('theme'); $('#bset').title = t('settings');
 }
-function regionBadge(r){ return r ? '<span class="rg rg-' + r + '">' + (r === 'ES' ? 'ES' : 'LATAM') + '</span>' : ''; }
+const VOPTS = {es: ['both', 'ES', 'LA'], pt: ['both', 'PT', 'BR'], en: ['both', 'UK', 'US'], fr: ['both', 'FR', 'CA'], zh: ['simp', 'trad']};
+const VSP = {es: {ES: 'es-ES', LA: 'es-MX'}, pt: {PT: 'pt-PT', BR: 'pt-BR'}, en: {UK: 'en-GB', US: 'en-US'}, fr: {FR: 'fr-FR', CA: 'fr-CA'}};
+const pref = lc => S.vars[lc] || 'both';
+const regional = lc => !!VOPTS[lc] && lc !== 'zh' && pref(lc) !== 'both';
+const off = (r, lc) => !!r && regional(lc) && r !== pref(lc);
+const trad = lc => lc === 'zh' && pref('zh') === 'trad';
+function regionBadge(r){ return r ? '<span class="rg ' + (['ES', 'PT', 'UK', 'FR'].includes(r) ? 'rg-a' : 'rg-b') + '">' + (r === 'LA' ? 'LATAM' : r) + '</span>' : ''; }
+function varBlocks(langs, attr){
+  return langs.filter(c => VOPTS[c]).map(c => '<h3>' + t('vq_' + c) + '</h3><div class="seg">' + VOPTS[c].map(v =>
+    '<button ' + attr + '="' + c + '" data-val="' + v + '" class="' + (pref(c) === v ? 'on' : '') + '">' + t(v) + '</button>').join('') + '</div>').join('');
+}
 function chip(x, lc, kind){
-  const dim = lc === 'es' && S.es !== 'both' && x.r && x.r !== S.es;
+  const dim = off(x.r, lc), sw = trad(lc) && x.alt;
   return '<button class="chip ' + (kind || '') + (dim ? ' dim' : '') + '" data-w="' + esc(x.w || x.t) + '" data-l="' + lc + '">' +
-    '<span class="ct" lang="' + lc + '">' + esc(x.t) + '</span>' +
-    (x.alt ? '<span class="calt" lang="' + lc + '">' + esc(x.alt) + '</span>' : '') +
+    '<span class="ct" lang="' + lc + '">' + esc(sw ? x.alt : x.t) + '</span>' +
+    (x.alt ? '<span class="calt" lang="' + lc + '">' + esc(sw ? x.t : x.alt) + '</span>' : '') +
     (x.tr ? '<span class="ctr">' + esc(x.tr) + '</span>' : '') +
     (x.g ? '<span class="cg">' + esc(x.g) + '</span>' : '') +
     (x.r ? regionBadge(x.r) : (x.q ? '<span class="cq">' + esc(x.q.slice(0, 28)) + '</span>' : '')) + '</button>';
@@ -92,7 +104,8 @@ function wordChips(list){
 /* A suggestion: the word, then one button per language it exists in. */
 function sugRow(x){
   const one = x.langs.length === 1 ? x.langs[0].c : '';
-  return '<div class="srow"><button type="button" class="sw" data-w="' + esc(x.w) + '" data-l="' + one + '">' + esc(x.w) + '</button>' +
+  return '<div class="srow"><button type="button" class="sw" data-w="' + esc(x.w) + '" data-l="' + one + '"><span lang="' + one + '">' + esc(x.w) + '</span>' +
+    (x.tr && x.tr !== x.w ? ' <span class="ftr">' + esc(x.tr) + '</span>' : '') + '</button>' +
     '<span class="slangs">' + x.langs.map(l => '<button type="button" class="sl" data-w="' + esc(x.w) + '" data-l="' + l.c + '">' +
       esc(langName(l.c)) + (l.form ? ' <i>· ' + t('form') + '</i>' : '') + '</button>').join('') + '</span></div>';
 }
@@ -114,7 +127,7 @@ function home(){
   R = null; token++; input.value = ''; view = 'home'; document.body.classList.remove('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
   const hr = new Date().getHours(), hi = t('hello')[hr < 5 ? 0 : hr < 13 ? 1 : hr < 18 ? 2 : 3];
-  out.innerHTML = '<h1 class="hello">' + hi + ' ' + (hr >= 5 && hr < 18 ? '☀️' : '🌙') + '</h1><p class="hint">' + t('hint') + '</p>' +
+  out.innerHTML = '<h1 class="hello">' + hi + ' ' + (hr >= 5 && hr < 18 ? '☀️' : '🌙') + '</h1><p class="hint">' + t('hint') + (S.langs.includes('ja') || S.langs.includes('si') ? '<br><span class="small">' + t('latinHint') + '</span>' : '') + '</p>' +
     '<section class="card wotd" id="wotd" hidden></section>' +
     '<button class="act surprise" data-surprise>' + t('surprise') + '</button>' +
     (S.saved.length ? '<section class="shelf"><h2>★ ' + t('favs') + '</h2><div class="chips">' + wordChips(S.saved.slice(0, 8)) + '</div>' + (S.saved.length > 8 ? '<button class="morebtn" data-nav="favs">' + t('seeAll') + ' (' + S.saved.length + ')</button>' : '') + '</section>' : '') +
@@ -131,12 +144,17 @@ async function search(w, hint, exact){
   try{ r = await Core.lookup(w, S.langs, exact); }catch(e){ if(my === token) message(t('net')); return; }
   if(my !== token) return;
   if(!r){
-    const sg = (await Core.suggest(w, S.langs)).filter(x => x.w !== w);
+    const [sg0, scr] = await Promise.all([Core.suggest(w, S.langs), Core.scriptSuggest(w, S.langs).catch(() => [])]);
     if(my !== token) return;
+    if(scr.length === 1 && hint !== 'nojump') return search(scr[0].w, scr[0].langs[0].c);
+    const sg = scr.concat(sg0.filter(x => x.w !== w));
     return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="slist">' + sugList(sg) + '</div>' : ''));
   }
   const avail = S.langs.filter(c => r.entries[c]);
   if(!avail.length){
+    const scr = await Core.scriptSuggest(w, S.langs).catch(() => []);
+    if(my !== token) return;
+    if(scr.length) return message(t('inScript') + '<div class="slist">' + sugList(scr) + '</div>');
     const known = Object.keys(r.entries);
     const names = known.map(langName).concat(r.others).slice(0, 12);
     return message(t('noLang') + (names.length ? '<p>' + t('also') + ' ' + esc(names.join(', ')) + '</p>' : '') +
@@ -164,13 +182,14 @@ function show(){
   let n = 0; E.pos.forEach(p => p.senses.forEach(s => { s.n = ++n; }));
   const h0 = E.pos.find(p => p.head);
   let big = E.typed ? esc(E.typed) : (h0 && h0.head.html ? h0.head.html.replace(/<\/?a[^>]*>/g, '') : esc(E.word));
-  const alt = E.typed && E.typed !== E.word ? E.word : '';
+  let alt = E.typed && E.typed !== E.word ? E.word : '';
+  if(trad(lc) && alt){ big = esc(alt); alt = E.typed; }
   let pr = E.pron;
-  if(lc === 'es' && S.es !== 'both'){ const m = pr.filter(p => !p.r || p.r === S.es); if(m.length) pr = m; }
-  pr = pr.slice(0, lc === 'es' || lc === 'en' ? 2 : 1);
+  if(regional(lc)){ const m = pr.filter(p => !p.r || p.r === pref(lc)); if(m.length) pr = m; }
+  pr = pr.slice(0, ['es', 'en', 'pt', 'fr'].includes(lc) ? 2 : 1);
   let h = '';
   if(R.avail.length > 1) h += '<nav class="tabs">' + R.avail.map(c => '<button class="tab' + (c === lc ? ' on' : '') + '" data-tab="' + c + '">' + esc(Core.BY_C[c].n) + '</button>').join('') + '</nav>';
-  h += '<header class="word"><div class="wl">' + esc(L.n) + (lc === 'es' && S.es !== 'both' ? ' · ' + t(S.es) : '') + '</div>' +
+  h += '<header class="word"><div class="wl">' + esc(L.n) + (regional(lc) ? ' · ' + t(pref(lc)) : '') + '</div>' +
     '<h1 lang="' + lc + '">' + big + (alt ? ' <small lang="' + lc + '">' + esc(alt) + '</small>' : '') + '</h1>' +
     (E.tr ? '<div class="roman">' + esc(E.tr) + '</div>' : '') +
     (pr.length ? '<div class="ipa">' + pr.map(p => '<span>' + esc(p.ipa) + (p.r ? ' ' + regionBadge(p.r) : (p.label && pr.length > 1 ? ' <em>' + esc(p.label.split(',')[0]) + '</em>' : '')) + '</span>').join('') + '</div>' : '') +
@@ -189,10 +208,10 @@ function show(){
   E.pos.forEach(p => {
     h += '<div class="posblock"><h3>' + esc(posName(p.name)) + '</h3><ol class="senses">';
     p.senses.forEach((s, i) => {
-      const dim = lc === 'es' && S.es !== 'both' && s.r && s.r !== S.es;
+      const dim = off(s.r, lc);
       h += '<li class="sense' + (s.sub ? ' sub' : '') + (dim ? ' dim' : '') + (i >= 5 ? ' extra' : '') + '"><span class="num">' + s.n + '</span><div>' +
-        '<p class="def">' + regionBadge(s.r) + s.labels.filter(l => !Core.region(l)).slice(0, 3).map(l => '<span class="lb">' + esc(l) + '</span>').join('') + ' ' + s.html + '</p>' +
-        s.ex.slice(0, 2).map(e => '<div class="ex"><span class="ex-t" lang="' + lc + '">' + e.h + '</span>' +
+        '<p class="def">' + regionBadge(s.r) + s.labels.filter(l => !Core.region(l, lc)).slice(0, 3).map(l => '<span class="lb">' + esc(l) + '</span>').join('') + ' ' + s.html + '</p>' +
+        s.ex.slice(0, 2).map(e => '<div class="ex"><span class="ex-t" lang="' + lc + '">' + (trad(lc) && e.ht ? e.ht : e.h) + '</span>' +
           (e.tr ? '<span class="ex-r">' + esc(e.tr) + '</span>' : '') + (e.t ? '<span class="ex-m">' + esc(e.t) + '</span>' : '') + '</div>').join('') +
         (s.formOf ? '<button class="chip plain" data-w="' + esc(s.formOf) + '" data-l="' + lc + '">→ ' + t('goLemma') + ' <b>' + esc(s.formOf) + '</b></button>' : '') +
         '</div></li>';
@@ -251,10 +270,10 @@ async function loadTrans(){
     '<button class="pv' + (p.w === word ? ' on' : '') + '" data-pivot="' + esc(p.w) + '" lang="en">' + esc(p.w) + '</button>').join('') + '</div>';
   if(!groups.length) h += '<p class="muted">' + t('noTrans') + '</p>';
   const grp = (g, extra) => {
-    let s = '<div class="tg' + (extra ? ' extra' : '') + '"><h3 lang="en">' + (lc !== 'en' ? '<b>' + esc(word) + '</b> · ' : '') + esc(g.gloss || '') + '</h3>';
+    let s = '<div class="tg' + (extra ? ' extra' : '') + '"><h3 lang="en">' + (lc !== 'en' ? '<b>' + esc(word) + '</b> · ' : '') + esc(g.gloss || '') + (g.via ? ' <span class="muted">· ' + t('via2') + ' ' + esc(g.via) + '</span>' : '') + '</h3>';
     targets.forEach(c => {
       let ts = g.by[c]; if(!ts) return;
-      if(c === 'es' && S.es !== 'both') ts = ts.slice().sort((a, b) => (a.r && a.r !== S.es ? 1 : 0) - (b.r && b.r !== S.es ? 1 : 0));
+      if(regional(c)) ts = ts.slice().sort((a, b) => (off(a.r, c) ? 1 : 0) - (off(b.r, c) ? 1 : 0));
       s += '<div class="trow"><span class="tl">' + esc(Core.BY_C[c].n) + '</span><div class="chips">' + ts.slice(0, 8).map(x => chip(x, c, 'trc')).join('') + '</div></div>';
     });
     return s + '</div>';
@@ -266,7 +285,7 @@ async function loadTrans(){
 
 /* listen: recorded audio from Wiktionary when there is one, else the device voice */
 async function speak(){
-  const lang = R.cur === 'es' && S.es === 'LA' ? 'es-MX' : Core.BY_C[R.cur].sp;
+  const lang = (VSP[R.cur] && VSP[R.cur][pref(R.cur)]) || Core.BY_C[R.cur].sp;
   let voices = 'speechSynthesis' in window ? speechSynthesis.getVoices() : [];
   if('speechSynthesis' in window && !voices.length){
     await new Promise(r => { speechSynthesis.addEventListener('voiceschanged', r, {once: true}); setTimeout(r, 1200); });
@@ -280,35 +299,37 @@ async function speak(){
 }
 function listen(){
   const E = R.r.entries[R.cur]; let a = E.audio;
-  if(R.cur === 'es' && S.es !== 'both'){ const m = a.filter(x => x.r === S.es); a = m.length ? m : a.filter(x => !x.r); }
+  if(regional(R.cur)){ const m = a.filter(x => x.r === pref(R.cur)); a = m.length ? m : a.filter(x => !off(x.r, R.cur)); }
   if(!a.length) return speak();
   try{ new Audio(a[0].src).play().catch(speak); }catch(e){ speak(); }
 }
 
 /* settings */
-function openSettings(){
+function renderSettings(){
   const d = $('#set');
   d.innerHTML = '<h2>' + t('settings') + '</h2><h3>' + t('myLangs') + '</h3><div class="lgrid">' +
     Core.LANGS.map(L => '<label><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
-    '</div><h3>' + t('esVar') + '</h3><div class="seg">' + ['both','ES','LA'].map(v => '<button data-es="' + v + '" class="' + (S.es === v ? 'on' : '') + '">' + t(v) + '</button>').join('') +
-    '</div><h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
+    '</div>' + varBlocks(S.langs, 'data-var') + '<h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
     '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button><button class="done" data-close>' + t('close') + '</button>';
+}
+function openSettings(){
+  renderSettings(); const d = $('#set');
   if(d.showModal) d.showModal(); else d.setAttribute('open', '');
 }
 $('#set').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
-  if(b.dataset.es){ S.es = b.dataset.es; store.set('es', S.es); openSettingsRefresh(); }
-  else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); applyPrefs(); openSettingsRefresh(); }
+  if(b.dataset.var){ S.vars[b.dataset.var] = b.dataset.val; store.set('vars', S.vars); renderSettings(); }
+  else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); applyPrefs(); renderSettings(); }
   else if('close' in b.dataset){ $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); }
   else if('rewelcome' in b.dataset){ skipReload = true; $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); welcome(); }
 });
-function openSettingsRefresh(){ const d = $('#set'); if(d.close && d.open) d.close(); openSettings(); }
 $('#set').addEventListener('change', e => {
   const c = e.target.dataset.lang; if(!c) return;
   const on = new Set(S.langs); e.target.checked ? on.add(c) : on.delete(c);
   S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x));
   if(!S.langs.length) S.langs = ['en'];
   store.set('langs', S.langs);
+  const y = $('#set').scrollTop; renderSettings(); $('#set').scrollTop = y;
 });
 let skipReload = false;
 $('#set').addEventListener('close', () => {
@@ -347,10 +368,11 @@ input.addEventListener('input', () => {
   clearTimeout(st); const v = input.value.trim();
   if(v.length < 2){ sug.hidden = true; return; }
   st = setTimeout(async () => {
-    const list = await Core.suggest(v, S.langs);
+    const [list, scr] = await Promise.all([Core.suggest(v, S.langs), Core.scriptSuggest(v, S.langs).catch(() => [])]);
     if(input.value.trim() !== v || document.activeElement !== input) return;
-    sug.innerHTML = sugList(list);
-    sug.hidden = !list.length;
+    const all = scr.concat(list.filter(x => !scr.some(y => y.w === x.w)));
+    sug.innerHTML = sugList(all);
+    sug.hidden = !all.length;
   }, 220);
 });
 sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w, b.dataset.l || undefined); } });
@@ -391,7 +413,7 @@ window.addEventListener('hashchange', () => {
 });
 /* ===== Welcome ===== */
 const WELCOME_LANGS = ['it','en','es','zh','ja','fr','si','ca','de','pt','ru','ar','hi','ko'];
-function welcome(){
+function welcome(keep){
   R = null; token++; view = 'welcome';
   document.body.classList.add('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -404,11 +426,11 @@ function welcome(){
     '<h2>' + t('wLangs') + '</h2><div class="chips wlangs">' +
     WELCOME_LANGS.map(c => '<button class="chip plain wl' + (S.langs.includes(c) ? ' on' : '') + '" data-wl="' + c + '" aria-pressed="' + S.langs.includes(c) + '"><span lang="' + c + '">' + esc(Core.BY_C[c].n) + '</span>' +
       (Core.BY_C[c].n !== langName(c) ? '<span class="cq">' + esc(langName(c)) + '</span>' : '') + '</button>').join('') + '</div>' +
-    '<div class="wes"><h2>' + t('esVar') + '</h2><div class="seg">' + ['both','ES','LA'].map(v => '<button data-wes="' + v + '" class="' + (S.es === v ? 'on' : '') + '">' + t(v) + '</button>').join('') + '</div></div>' +
+    '<div class="wvars">' + varBlocks(S.langs, 'data-wvar') + '</div>' +
     '<p class="muted small">' + t('wLater') + '</p>' +
     '<button class="done big" data-start>' + t('start') + ' →</button>' +
     '<p class="muted small center">' + t('noAI') + '</p></section>';
-  window.scrollTo(0, 0);
+  if(!keep) window.scrollTo(0, 0);
 }
 const LOGO = '<svg viewBox="0 0 120 120" width="88" height="88"><rect x="24" y="28" width="72" height="51" rx="13" fill="var(--pfill)"/><path d="M43 77 L39 96 L60 78 Z" fill="var(--pfill)"/>' +
   '<rect x="35" y="40" width="48" height="6" rx="3" fill="var(--mean)"/><rect x="35" y="51" width="36" height="6" rx="3" fill="var(--syn)"/><rect x="35" y="62" width="43" height="6" rx="3" fill="var(--ant)"/></svg>';
@@ -444,7 +466,7 @@ function favs(){
   out.innerHTML = h;
 }
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-nav],[data-wl],[data-wes],[data-wui],[data-start],[data-ff],[data-unfav],[data-undo],[data-copyfavs]');
+  const b = e.target.closest('[data-nav],[data-wl],[data-wvar],[data-wui],[data-start],[data-ff],[data-unfav],[data-undo],[data-copyfavs]');
   if(!b || b.closest('#set')) return;
   const d = b.dataset;
   if(d.nav === 'home'){ lastRemoved = null; home(); }
@@ -453,10 +475,10 @@ document.addEventListener('click', e => {
     const on = new Set(S.langs); on.has(d.wl) ? on.delete(d.wl) : on.add(d.wl);
     if(!on.size) return;
     S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x)); store.set('langs', S.langs);
-    b.classList.toggle('on', on.has(d.wl)); b.setAttribute('aria-pressed', on.has(d.wl));
+    const y = window.scrollY; welcome(true); window.scrollTo(0, y);
   }
-  else if(d.wes){ S.es = d.wes; store.set('es', S.es); b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
-  else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); applyPrefs(); welcome(); }
+  else if(d.wvar){ S.vars[d.wvar] = d.val; store.set('vars', S.vars); b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
+  else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); applyPrefs(); welcome(true); }
   else if('start' in d){ store.set('welcomed', true); home(); input.focus(); }
   else if(d.ff){ favFilter = d.ff; lastRemoved = null; favs(); }
   else if(d.unfav !== undefined){
@@ -484,11 +506,11 @@ function toast(msg){
 const plain = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 async function didYouMean(w, my){
   if(!/^[\p{L} '-]+$/u.test(w)) return;
-  const list = await Core.suggest(w, S.langs);
+  const [list, scr] = await Promise.all([Core.suggest(w, S.langs), Core.scriptSuggest(w, S.langs).catch(() => [])]);
   if(my !== token || !$('#didyou')) return;
-  const hits = list.filter(x => x.w !== w && x.w.toLowerCase() !== w.toLowerCase() && plain(x.w) === plain(w));
-  if(hits.length) $('#didyou').innerHTML = '<div class="didyou">' + t('didYou') + ' ' + hits.slice(0, 2).map(x =>
-    '<button class="chip plain" data-w="' + esc(x.w) + '" data-l="' + (x.langs.length === 1 ? x.langs[0].c : '') + '"><b>' + esc(x.w) + '</b>' +
+  const hits = scr.concat(list.filter(x => x.w !== w && x.w.toLowerCase() !== w.toLowerCase() && plain(x.w) === plain(w)));
+  if(hits.length) $('#didyou').innerHTML = '<div class="didyou">' + t('didYou') + ' ' + hits.slice(0, 3).map(x =>
+    '<button class="chip plain" data-w="' + esc(x.w) + '" data-l="' + (x.langs.length === 1 ? x.langs[0].c : '') + '"><b lang="' + (x.langs[0] ? x.langs[0].c : '') + '">' + esc(x.w) + '</b>' + (x.tr && x.tr !== x.w ? '<span class="ctr">' + esc(x.tr) + '</span>' : '') +
     x.langs.map(l => '<span class="cq">' + esc(langName(l.c)) + '</span>').join('') + '</button>').join(' ') + '?</div>';
 }
 function seeded(str){ let h = 2166136261; for(const ch of str){ h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; }
