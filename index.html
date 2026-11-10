@@ -1034,13 +1034,20 @@ function show(){
   loadTrans();
 }
 
+const langsLine = () => '<p class="trlangs">' + t('yourLangs') + ' ' + S.langs.map(c => esc(langName(c))).join(', ') + ' · <button class="linkbtn inline" data-opensettings>⚙ ' + t('change') + '</button></p>';
 async function loadTrans(){
   const my = token, E = R.r.entries[R.cur], lc = R.cur, box = $('#trbox');
   const targets = S.langs.filter(c => c !== lc && c !== 'en');
   let pivots = [], word = E.word, wantPos = null;
   if(lc !== 'en'){
-    E.pos.forEach(p => p.senses.forEach(s => { const k = s.links[0]; if(k && pivots.length < 6 && !pivots.some(x => x.w === k)) pivots.push({w: k, pos: p.name.replace(/ \d+$/, '')}); }));
-    if(!pivots.length){ box.innerHTML = '<p class="muted">' + t('noTrans') + '</p>'; return; }
+    const add = (k, pos) => { if(k && pivots.length < 6 && !pivots.some(x => x.w === k)) pivots.push({w: k, pos}); };
+    E.pos.forEach(p => p.senses.forEach(s => {
+      const pos = p.name.replace(/ \d+$/, '');
+      if(s.links[0]) add(s.links[0], pos);
+      else { const plainDef = s.html.replace(/<[^>]+>/g, '').replace(/\(.*?\)/g, '').trim(); if(/^[a-z][a-z' -]{1,25}$/i.test(plainDef) && plainDef.split(' ').length <= 3) add(plainDef, pos); }
+    }));
+    if(R.r.entries.en) add(R.r.title, null);
+    if(!pivots.length){ box.innerHTML = '<p class="muted">' + t('noTrans') + '</p>' + langsLine(); return; }
     const pv = pivots.find(x => x.w === R.pivot) || pivots[0];
     word = pv.w; wantPos = pv.pos; R.pivot = pv.w;
   }
@@ -1065,7 +1072,7 @@ async function loadTrans(){
   if(groups.length > 3) h += '<button class="morebtn" data-more>' + t('otherSenses') + ' (' + (groups.length - 3) + ')</button>';
   const missing = targets.filter(c => !groups.some(g => g.by[c]));
   if(groups.length && missing.length) h += '<p class="trmiss">' + t('trMissing') + ' ' + missing.map(c => esc(langName(c))).join(', ') + '.</p>';
-  h += '<p class="trlangs">' + t('yourLangs') + ' ' + S.langs.map(c => esc(langName(c))).join(', ') + ' · <button class="linkbtn inline" data-opensettings>⚙ ' + t('change') + '</button></p>';
+  h += langsLine();
   box.innerHTML = h;
 }
 
