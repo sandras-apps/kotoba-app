@@ -245,14 +245,27 @@ function build(els, lc, title){
     }
   }
   E.pos = E.pos.filter(p => p.senses.length);
+  const merged = [];
+  E.pos.forEach(p => { const k = p.name.replace(/ \d+$/, ''); const m = merged.find(x => x.name === k);
+    if(m){ m.senses.push(...p.senses); if(!m.head) m.head = p.head; } else merged.push({...p, name: k}); });
+  E.pos = merged;
   const h0 = E.pos.find(p => p.head); if(h0 && !E.tr) E.tr = h0.head.tr;
   return E;
 }
 /* Look a word up. Returns {title, entries:{code:Entry}, others:[language names]} or null if the page does not exist. */
-async function lookup(word){
-  let d = await getDoc(word);
-  if(!d && word !== word.toLowerCase()) d = await getDoc(word.toLowerCase());
-  if(!d) return null;
+async function lookup(word, codes, exact){
+  const low = word.toLowerCase();
+  const order = exact || low === word ? [word] : [low, word];
+  let first = null;
+  for(const w of order){
+    const d = await getDoc(w); if(!d) continue;
+    const res = await fromDoc(d);
+    if(!first) first = res;
+    if(!codes || codes.some(c => res.entries[c])){ if(w !== word) res.asked = word; return res; }
+  }
+  return first;
+}
+async function fromDoc(d){
   const secs = sections(d.root), entries = {}, others = [];
   for(const [name, els] of secs){
     const L = BY_WK[name];
@@ -297,4 +310,38 @@ async function translations(enWord, codes){
   }
   return readTables(tt, codes);
 }
-const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, esc, region};
+/* ===== Random words (word of the day, surprise) =====
+   Picks from Wiktionary categories by starting at a random sort-key prefix. */
+const LAT = 'bcdfglmnprstv', VOW = 'aeiou';
+const PICK = {
+  zh: {cat:'Mandarin terms with usage examples', pre:'人口女心手日月木水火土山言金食馬大小子白目石竹米糸衣車門雨', ok:/^[\u4E00-\u9FFF]{1,3}$/},
+  ja: {cat:'Japanese terms with usage examples', pre:'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわ', ok:/^[\u3040-\u30FF\u4E00-\u9FFF]{1,5}$/},
+  si: {cat:'Sinhalese lemmas', pre:'අආඉඋඑඔකගචජතදනපබමයරලවසහ', ok:/^[\u0D80-\u0DFF]{2,9}$/},
+  ko: {cat:'Korean lemmas', pre:'가나다라마바사아자차카타파하', ok:/^[\uAC00-\uD7AF]{1,4}$/},
+  ru: {cat:'Russian terms with usage examples', pre:'абвгдежзиклмнопрстуфхчш', ok:/^[а-яё]{3,12}$/},
+  ar: {cat:'Arabic lemmas', pre:'ابتجحدرسشصعفقكلمنهو', ok:/^[\u0600-\u06FF]{2,8}$/},
+  hi: {cat:'Hindi terms with usage examples', pre:'अआइउएओकखगचजतदधनपबभमयरलवशसह', ok:/^[\u0900-\u097F]{2,10}$/},
+  de: {ok:/^[A-Za-zÄÖÜäöüß]{3,14}$/}
+};
+async function randomWord(code, rnd){
+  const L = BY_C[code], P = PICK[code] || {};
+  const cat = P.cat || (L.wk + ' terms with usage examples');
+  const ok = P.ok || /^[a-zà-öø-ÿœç]{3,13}$/;
+  for(let tries = 0; tries < 4; tries++){
+    const pre = P.pre ? P.pre[Math.floor(rnd() * P.pre.length)] : LAT[Math.floor(rnd() * LAT.length)] + VOW[Math.floor(rnd() * VOW.length)];
+    let list = [];
+    try{
+      const r = await fetch(API + '?action=query&format=json&formatversion=2&origin=*&list=categorymembers&cmtype=page&cmnamespace=0&cmlimit=40&cmtitle=' +
+        encodeURIComponent('Category:' + cat) + '&cmstartsortkeyprefix=' + encodeURIComponent(pre));
+      list = (((await r.json()).query || {}).categorymembers || []).map(m => m.title).filter(w => ok.test(w));
+    }catch(e){ return null; }
+    if(!list.length) continue;
+    const w = list[Math.floor(rnd() * list.length)];
+    const res = await lookup(w, [code], true);
+    const E = res && res.entries[code];
+    const s0 = E && E.pos[0] && E.pos[0].senses[0];
+    if(s0 && !s0.formOf && !/\b(plural|form|inflection|participle|feminine) of\b/i.test(s0.html)) return {w: res.title, E};
+  }
+  return null;
+}
+const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, randomWord, esc, region};

@@ -22,9 +22,10 @@ ${r('style.css')}</style>
 <div class="top"><div class="wrap">
   <div class="bar"><a href="#" id="brand">Kotoba</a>
     <button class="ib" id="bfav" aria-label="Favourites">★</button>
-    <button class="ib" id="bsize" aria-label="Text size">Aa</button>
+    <button class="ib" id="bsize" aria-label="Text size" aria-haspopup="true" aria-expanded="false">Aa</button>
     <button class="ib" id="btheme" aria-label="Theme">◐</button>
-    <button class="ib" id="bset" aria-label="Settings">⚙</button></div>
+    <button class="ib" id="bset" aria-label="Settings">⚙</button>
+    <div id="sizepop" hidden></div></div>
   <form id="form" autocomplete="off"><input id="q" type="search" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Word"><button id="go" type="submit">Cerca</button><div id="sug" hidden></div></form>
 </div></div>
 <main class="wrap" id="out"></main>
