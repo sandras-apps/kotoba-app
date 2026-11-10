@@ -203,10 +203,6 @@ function senses(ol, P, depth, lc){
     });
     c.querySelectorAll('.h-usage-example').forEach(x => { const e = example(x); if(e && S.ex.length < 4) S.ex.push(e); });
     c.querySelectorAll('.zhusex').forEach(x => { const e = zhExample(x); if(e && S.ex.length < 4) S.ex.push(e); });
-    if(!S.ex.length){
-      const q = c.querySelector('.h-quotation'); const e = q && example(q);
-      if(e && e.h.length < 170 && !/ſ/.test(e.h)) S.ex.push(e);
-    }
     c.querySelectorAll('dl,ul').forEach(e => e.remove());
     c.querySelectorAll('.usage-label-sense').forEach(u => {
       u.querySelectorAll('.ib-content').forEach(l => S.labels.push(...txt(l).split(/\s*,\s*/).filter(Boolean)));
@@ -218,7 +214,7 @@ function senses(ol, P, depth, lc){
       const h = a.getAttribute('href').split('#'); const t = a.getAttribute('title');
       if(t && !/:/.test(t) && (!h[1] || h[1] === 'English') && !a.closest('.qualifier-content,.mention-gloss')) S.links.push(t);
     });
-    S.html = safe(c).replace(/\s+/g, ' ').trim();
+    S.html = safe(c).replace(/\s+/g, ' ').trim().replace(/^(\[(from |since |until )?[\d?]{2,4}(s|th century)?\s*([–-]\s*[\d?]{2,4})?\]\s*)+/i, '');
     if(S.html) P.senses.push(S);
     li.querySelectorAll(':scope > ol').forEach(o => senses(o, P, depth + 1, lc));
   }
@@ -243,6 +239,7 @@ function build(els, lc, title){
     tabs.forEach(t => E.tt.push({gloss: t.getAttribute('data-gloss') || '', pos: /^Translations/.test(h) ? (P ? P.name : '') : h, el: t}));
     if(!tabs.length && /^Translations/.test(h)){
       const a = el.querySelector('a[href*="/translations"]');
+      if(a){ E.tsubAt = E.tt.length; E.tsubPos = P ? P.name : ''; }
       if(a) E.tsub = decodeURIComponent(a.getAttribute('href').replace(/^\/wiki\//, '').split('#')[0]).replace(/_/g, ' ');
       else el.querySelectorAll('.NavHead a[href^="/wiki/"]').forEach(x => { const ti = x.getAttribute('title'); if(ti && !/:/.test(ti) && !E.tsee.includes(ti) && E.tsee.length < 2) E.tsee.push(ti); });
     }
@@ -257,7 +254,8 @@ function build(els, lc, title){
   const merged = [];
   E.pos.forEach(p => { const k = p.name.replace(/ \d+$/, ''); const m = merged.find(x => x.name === k);
     if(m){ m.senses.push(...p.senses); if(!m.head) m.head = p.head; } else merged.push({...p, name: k}); });
-  E.pos = merged;
+  const CHAR = /^(Kanji|Han character|Hanja|Character|Definitions? of character)$/i;
+  E.pos = merged.some(p => !CHAR.test(p.name)) ? merged.filter(p => !CHAR.test(p.name)) : merged;
   const h0 = E.pos.find(p => p.head); if(h0 && !E.tr) E.tr = h0.head.tr;
   return E;
 }
@@ -315,7 +313,7 @@ async function translations(enWord, codes){
   let tt = E.tt;
   if(E.tsub){
     const d2 = await getDoc(E.tsub); const s2 = d2 && sections(d2.root).get('English');
-    if(s2) tt = tt.concat(build(s2, 'en', d2.title).tt);
+    if(s2){ const at = E.tsubAt != null ? E.tsubAt : tt.length; tt = tt.slice(0, at).concat(build(s2, 'en', d2.title).tt).concat(tt.slice(at)); }
   }
   for(const w of E.tsee){
     const d2 = await getDoc(w); const s2 = d2 && sections(d2.root).get('English'); if(!s2) continue;
