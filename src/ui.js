@@ -19,7 +19,7 @@ const S = {
 function syncLangs(){ S.langs = Core.LANGS.map(L => L.c).filter(c => S.picked.includes(c) || c === S.ui); }
 function setPicked(list){ S.picked = Core.LANGS.map(L => L.c).filter(c => list.includes(c)); store.set('langs', S.picked); syncLangs(); }
 syncLangs();
-const VERSION = '1.2';
+const VERSION = '1.3';
 const TXT = {
   it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
     nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',
@@ -630,7 +630,12 @@ async function loadWotd(){
   drawWotd(W);
   if(W.g) return;
   try{
-    const res = await Core.lookup(W.w, [W.l], true), E = res && res.entries[W.l];
+    let res = await Core.lookup(W.w, [W.l], true), E = res && res.entries[W.l];
+    for(let i = 0; i < 3 && !E; i++){
+      const w2 = Core.pickWord(W.l, Math.random, W.w);
+      res = await Core.lookup(w2, [W.l], true); E = res && res.entries[W.l];
+      if(E) W.w = w2;
+    }
     if(!E) return;
     W.s = E.typed || E.word; W.tr = E.tr || ''; W.g = gloss(E);
     if(S.ui === 'it'){ const im = await Core.itMeanings([W.w], W.l).catch(() => null); if(im) W.g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
@@ -638,9 +643,17 @@ async function loadWotd(){
     if(my === token) drawWotd(W);
   }catch(e){}
 }
-function surprise(){
-  const l = S.langs[Math.floor(Math.random() * S.langs.length)];
-  search(Core.pickWord(l, Math.random, R ? R.r.title : ''), l, true);
+/* Only opens a word once it is confirmed to exist in that language; otherwise it quietly tries another. */
+async function surprise(b){
+  Core.clearError();
+  if(b){ b.disabled = true; b.innerHTML = '<span class="spin"></span>' + t('loading'); }
+  for(let i = 0; i < 5; i++){
+    const l = S.langs[Math.floor(Math.random() * S.langs.length)], w = Core.pickWord(l, Math.random, R ? R.r.title : '');
+    let res = null; try{ res = await Core.lookup(w, [l], true); }catch(e){ break; }
+    if(res && res.entries[l]) return search(w, l, true);
+  }
+  if(b){ b.disabled = false; b.textContent = t('surprise'); }
+  toast(netMsg());
 }
 
 /* ===== review (flashcards from favourite words) ===== */
@@ -688,7 +701,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-surprise],[data-enable],[data-review],[data-rreveal],[data-rknew],[data-ragain],[data-noteopen],[data-notesave]');
   if(!b) return;
   const d = b.dataset;
-  if('surprise' in d) surprise();
+  if('surprise' in d) surprise(b);
   else if(d.enable){ if(!S.langs.includes(d.enable)) setPicked(S.picked.concat(d.enable)); search(d.ew, d.enable); }
   else if('review' in d) startReview();
   else if('rreveal' in d){ RV.open = true; drawReview(); }
