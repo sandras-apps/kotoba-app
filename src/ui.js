@@ -265,9 +265,13 @@ async function loadTrans(){
 }
 
 /* listen: recorded audio from Wiktionary when there is one, else the device voice */
-function speak(){
+async function speak(){
   const lang = R.cur === 'es' && S.es === 'LA' ? 'es-MX' : Core.BY_C[R.cur].sp;
-  const voices = 'speechSynthesis' in window ? speechSynthesis.getVoices() : [];
+  let voices = 'speechSynthesis' in window ? speechSynthesis.getVoices() : [];
+  if('speechSynthesis' in window && !voices.length){
+    await new Promise(r => { speechSynthesis.addEventListener('voiceschanged', r, {once: true}); setTimeout(r, 1200); });
+    voices = speechSynthesis.getVoices();
+  }
   const has = voices.some(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
   if(!has){ toast(t('noVoice')); return; }
   const E = R.r.entries[R.cur], u = new SpeechSynthesisUtterance(E.typed || E.word);

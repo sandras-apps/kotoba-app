@@ -143,7 +143,7 @@ function listTerms(el){
 }
 function pron(el, E){
   const zp = el.matches('.zhpron') ? el : el.querySelector('.zhpron');
-  if(zp){ const py = zp.querySelector('[class*="pinyin"]'); if(py && !E.tr) E.tr = txt(py); }
+  if(zp){ const py = zp.querySelector('[class*="pinyin"]'); if(py && !E.tr) E.tr = txt(py).replace(/\s*\([^)]*\d\)\s*$/, ''); }
   const boxes = el.querySelectorAll('li').length ? [...el.querySelectorAll('li')] : [el];
   boxes.forEach(b => {
     const own = x => (x.closest('li') || el) === b;
@@ -323,6 +323,8 @@ const PICK = {
   hi: {cat:'Hindi terms with usage examples', pre:'अआइउएओकखगचजतदधनपबभमयरलवशसह', ok:/^[\u0900-\u097F]{2,10}$/},
   de: {ok:/^[A-Za-zÄÖÜäöüß]{3,14}$/}
 };
+/* Words that would be unpleasant as a "word of the day" are skipped. */
+const UNKIND = /\b(vulgar|offensive|derogatory|slur|pejorative|obscene|bomb\w*|kill\w*|murder\w*|death|dead|die|corpse|blood\w*|war|weapon\w*|gun\w*|rape\w*|sex\w*|suicide|drug\w*|torture\w*|slave\w*|attack\w*|violen\w*|disease|cancer|excrement|feces|urine|penis|vagina|prostitut\w*|whore|insult\w*)\b/i;
 async function randomWord(code, rnd){
   const L = BY_C[code], P = PICK[code] || {};
   const cat = P.cat || (L.wk + ' terms with usage examples');
@@ -340,7 +342,8 @@ async function randomWord(code, rnd){
     const res = await lookup(w, [code], true);
     const E = res && res.entries[code];
     const s0 = E && E.pos[0] && E.pos[0].senses[0];
-    if(s0 && !s0.formOf && !/\b(plural|form|inflection|participle|feminine) of\b/i.test(s0.html)) return {w: res.title, E};
+    const all = E ? E.pos.flatMap(p => p.senses).map(s => s.html + ' ' + s.labels.join(' ')).join(' ') : '';
+    if(s0 && !s0.formOf && !/\b(plural|form|inflection|participle|feminine) of\b/i.test(s0.html) && !UNKIND.test(all)) return {w: res.title, E};
   }
   return null;
 }
