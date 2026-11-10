@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kotoba</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F5EFE6">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="description" content="A fast, calm, multilingual dictionary. Data from Wiktionary. No AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5EFE6;--card:#FCF9F4;--ink:#5A4A42;--muted:#8C7C72;--line:#E8DDCF;--pri:#9A6C5E;--pfill:#EBD6CA;--soft:#F1E5DA;--mean:#5E8793;--syn:#74926A;--ant:#B07285;--tr:#8E7AAB;--help:#A68A4E;--focus:#D9B48A;font-size:18px}
+:root[data-size="0"]{font-size:16px}:root[data-size="2"]{font-size:21px}
+:root[data-theme="dark"]{--bg:#2E2723;--card:#3A322D;--ink:#EADDD0;--muted:#B9A898;--line:#4B413A;--pri:#DDB9A9;--pfill:#5C4B42;--soft:#463C35;--mean:#9CC3CC;--syn:#B2CDA6;--ant:#E0AEBD;--tr:#C4B5DD;--help:#DCC48E}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible","Noto Sans Sinhala",system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei","Yu Gothic",sans-serif;line-height:1.6;letter-spacing:.01em}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding:10px 0 12px}
+.bar{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+#brand{font-weight:700;font-size:1.15rem;color:var(--pri);text-decoration:none;margin-right:auto}
+.ib{min-width:44px;height:44px;border-radius:12px;font-size:1.05rem;font-weight:700}
+.ib{color:var(--pri)}.ib:hover{background:var(--soft)}
+#form{display:flex;gap:8px;position:relative}
+#q{flex:1;min-width:0;font:inherit;font-size:1.25rem;padding:12px 16px;border:2px solid var(--pfill);border-radius:14px;background:var(--card);color:var(--ink)}
+#go{background:var(--pfill);color:var(--ink);font-weight:700;padding:0 20px;border-radius:14px}
+#sug{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:var(--card);border:2px solid var(--pri);border-radius:14px;overflow:hidden;z-index:6}
+#sug button{display:block;width:100%;text-align:left;padding:10px 16px;font-size:1.1rem}
+#sug button:hover{background:var(--soft)}
+main{padding:18px 0 40px;min-height:60vh}
+.hint{color:var(--muted);font-size:1.05rem}
+.shelf h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px}
+.msg{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:20px;font-size:1.1rem}
+.spin{display:inline-block;width:1em;height:1em;border:3px solid var(--line);border-top-color:var(--pri);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.tabs,.focus{display:flex;gap:6px;flex-wrap:wrap}.tabs{margin-top:4px}
+.tab{padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--card);font-weight:700}
+.tab.on{background:var(--pfill);color:var(--ink);border-color:var(--pfill)}
+.word{margin:14px 0 10px}
+.wl{font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.word h1{font-size:2.7rem;line-height:1.25;margin:2px 0 4px;overflow-wrap:anywhere}
+.word h1 small{font-size:1.2rem;color:var(--muted);font-weight:400}
+.word h1 rt{font-size:.38em;font-weight:400;color:var(--muted)}
+.roman{font-size:1.35rem;color:var(--tr);font-weight:700}
+.ipa{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:1.1rem;font-family:"Noto Sans","Segoe UI",system-ui,sans-serif}
+.ipa em{font-size:.8rem}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act{padding:9px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:700;min-height:44px}
+.act:hover,.act.on{border-color:var(--pri);background:var(--soft)}
+.focus{margin:16px 0 14px;background:var(--line);padding:4px;border-radius:14px;gap:4px;flex-wrap:nowrap;overflow-x:auto}
+.focus button{flex:1;white-space:nowrap;padding:8px 12px;border-radius:10px;font-weight:700;font-size:.95rem;color:var(--muted)}
+.focus button.on{background:var(--card);color:var(--pri)}
+.card{background:var(--card);box-shadow:0 2px 10px rgba(160,110,70,.10);border-radius:18px;padding:16px 18px 18px;margin:0 0 14px;border-left:8px solid var(--c);--c:var(--muted)}
+.card.mean{--c:var(--mean)}.card.syn{--c:var(--syn)}.card.ant{--c:var(--ant)}.card.tr{--c:var(--tr)}.card.help{--c:var(--help)}
+.card>h2,.card>summary{margin:0 0 8px;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:var(--c);font-weight:700}
+.card>summary{cursor:pointer;margin:0}.card[open]>summary{margin-bottom:10px}
+.card h3{font-size:.95rem;color:var(--muted);margin:14px 0 6px;font-weight:700}
+.card.quiet{padding:12px 18px}.card.quiet p{margin:0}
+#out[data-focus="mean"] .card:not([data-k="mean"]),#out[data-focus="nyms"] .card:not([data-k="nyms"]),#out[data-focus="tr"] .card:not([data-k="tr"]){display:none}
+.senses{list-style:none;margin:0;padding:0}
+.sense{display:flex;gap:12px;padding:8px 0}.sense+.sense{border-top:1px dashed var(--line)}
+.sense.sub{margin-left:26px}
+.extra{display:none!important}
+.num{flex:none;width:1.8em;height:1.8em;border-radius:50%;background:var(--c);color:var(--card);font-weight:700;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;margin-top:.2em}
+.num.gen{background:var(--line);color:var(--ink)}
+.def{margin:0;font-size:1.1rem}
+.def a,.help a[data-w]{color:inherit;text-decoration:underline dotted var(--c);text-underline-offset:4px;cursor:pointer}
+.lb,.rg,.cq,.cg{display:inline-block;font-size:.72rem;font-weight:700;border-radius:6px;padding:1px 7px;margin-right:5px;vertical-align:middle;background:var(--line);color:var(--muted);letter-spacing:.02em}
+.rg-ES{background:#F0DDA8;color:#6A5220}.rg-LA{background:#CFE3D2;color:#3F6149}
+.ex{margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--help) 11%,transparent);display:flex;flex-direction:column}
+.ex-t{font-size:1.08rem}.ex-t b{color:var(--pri)}
+.ex-r{color:var(--tr);font-size:.95rem}.ex-m{color:var(--muted);font-size:.95rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:baseline;gap:7px;padding:7px 13px;border-radius:12px;background:color-mix(in srgb,var(--c) 13%,transparent);border:2px solid transparent;font-size:1.08rem;font-weight:700;min-height:42px;text-align:left}
+.chip:hover{border-color:var(--c)}
+.chip.plain{background:var(--card);border-color:var(--line);font-weight:400}.chip.plain:hover{border-color:var(--pri)}
+.chip.dim,.sense.dim{opacity:.5}
+.chip .cq,.chip .cg,.chip .rg{margin:0}
+.calt,.ctr{font-weight:400;font-size:.9rem;color:var(--muted)}.ctr{color:var(--tr)}
+[lang="zh"].ct,[lang="ja"].ct,[lang="si"].ct,[lang="ko"].ct,[lang="ar"].ct,[lang="hi"].ct{font-size:1.25rem}
+.nrow{display:flex;gap:12px;padding:6px 0;align-items:flex-start}
+.muted{color:var(--muted)}
+.pivots{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.pv{padding:5px 12px;border-radius:999px;border:2px solid var(--line);font-weight:700}.pv.on{background:color-mix(in srgb,var(--tr) 22%,transparent);border-color:var(--tr)}
+.tg{padding:6px 0 10px}.tg+.tg{border-top:1px dashed var(--line)}
+.tg h3{font-weight:400;color:var(--ink);font-size:1rem}
+.trow{display:flex;gap:10px;padding:5px 0;align-items:flex-start}
+.tl{flex:none;width:5.6em;font-size:.85rem;font-weight:700;color:var(--muted);padding-top:.75em}
+.morebtn{margin-top:8px;padding:8px 14px;border-radius:10px;border:2px solid var(--line);font-weight:700;color:var(--c)}
+.help p{margin:6px 0}.help ul{margin:4px 0;padding-left:20px}
+.ext{color:var(--c);font-weight:700}
+footer{color:var(--muted);font-size:.85rem;padding:0 0 30px;text-align:center}
+dialog{border:0;border-radius:18px;padding:22px;max-width:min(560px,92vw);width:100%;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(120,80,50,.4)}
+dialog h2{margin:0 0 6px}dialog h3{margin:18px 0 8px;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 12px}
+.lgrid label{display:flex;align-items:center;gap:8px;padding:6px 4px;font-weight:700;cursor:pointer}
+.lgrid input{width:22px;height:22px;accent-color:var(--pri)}.lgrid small{font-weight:400;color:var(--muted)}
+.seg{display:flex;gap:4px;background:var(--line);padding:4px;border-radius:12px}
+.seg button{flex:1;padding:9px;border-radius:9px;font-weight:700;color:var(--muted)}.seg button.on{background:var(--card);color:var(--pri)}
+.done{margin-top:22px;width:100%;padding:13px;border-radius:12px;background:var(--pfill);color:var(--ink);font-weight:700}
+@media (max-width:520px){.word h1{font-size:2.2rem}.trow{flex-direction:column;gap:2px}.tl{width:auto;padding:0}#go{padding:0 14px}}
+#q:focus{border-color:var(--pri);outline:none}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap">
+  <div class="bar"><a href="#" id="brand">Kotoba</a>
+    <button class="ib" id="bsize" aria-label="Text size">Aa</button>
+    <button class="ib" id="btheme" aria-label="Theme">◐</button>
+    <button class="ib" id="bset" aria-label="Settings">⚙</button></div>
+  <form id="form" autocomplete="off"><input id="q" type="search" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Word"><button id="go" type="submit">Cerca</button><div id="sug" hidden></div></form>
+</div></div>
+<main class="wrap" id="out"></main>
+<footer class="wrap"><span id="src"></span></footer>
+<dialog id="set"></dialog>
+<script>
+/* ===== Core: data from en.wiktionary.org (CC BY-SA). No AI. ===== */
+const LANGS = [
+  {c:'it', wk:'Italian',   n:'Italiano',  it:'Italiano',   sp:'it-IT'},
+  {c:'en', wk:'English',   n:'English',   it:'Inglese',    sp:'en-US'},
+  {c:'es', wk:'Spanish',   n:'Español',   it:'Spagnolo',   sp:'es-ES'},
+  {c:'zh', wk:'Chinese',   n:'中文',       it:'Cinese',     sp:'zh-CN', tw:'Mandarin'},
+  {c:'ja', wk:'Japanese',  n:'日本語',     it:'Giapponese', sp:'ja-JP'},
+  {c:'fr', wk:'French',    n:'Français',  it:'Francese',   sp:'fr-FR'},
+  {c:'si', wk:'Sinhalese', n:'සිංහල',     it:'Singalese',  sp:'si-LK'},
+  {c:'ca', wk:'Catalan',   n:'Català',    it:'Catalano',   sp:'ca-ES'},
+  {c:'de', wk:'German',    n:'Deutsch',   it:'Tedesco',    sp:'de-DE'},
+  {c:'pt', wk:'Portuguese',n:'Português', it:'Portoghese', sp:'pt-PT'},
+  {c:'ru', wk:'Russian',   n:'Русский',   it:'Russo',      sp:'ru-RU'},
+  {c:'ar', wk:'Arabic',    n:'العربية',   it:'Arabo',      sp:'ar-SA'},
+  {c:'hi', wk:'Hindi',     n:'हिन्दी',      it:'Hindi',      sp:'hi-IN'},
+  {c:'ko', wk:'Korean',    n:'한국어',     it:'Coreano',    sp:'ko-KR'}
+];
+const BY_WK = Object.fromEntries(LANGS.map(l => [l.wk, l]));
+const BY_C  = Object.fromEntries(LANGS.map(l => [l.c, l]));
+const API = 'https://en.wiktionary.org/w/api.php';
+const cache = new Map();
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function txt(el){
+  if(!el) return '';
+  const c = el.cloneNode(true);
+  c.querySelectorAll('rt,rp').forEach(e => e.remove());
+  return c.textContent.replace(/\s+/g,' ').trim();
+}
+/* Serialise Wiktionary HTML keeping only harmless tags; wiki links become <a data-w>. */
+function safe(n, nolink){
+  let o = '';
+  n.childNodes.forEach(c => {
+    if(c.nodeType === 3) o += esc(c.nodeValue);
+    else if(c.nodeType === 1){
+      const t = c.tagName;
+      if(t === 'B' || t === 'STRONG') o += '<b>' + safe(c, nolink) + '</b>';
+      else if(t === 'I' || t === 'EM') o += '<i>' + safe(c, nolink) + '</i>';
+      else if(t === 'RUBY') o += '<ruby>' + safe(c, nolink) + '</ruby>';
+      else if(t === 'RT') o += '<rt>' + safe(c, nolink) + '</rt>';
+      else if(t === 'RP') {}
+      else if(t === 'BR') o += ' ';
+      else if(t === 'A'){
+        const h = (c.getAttribute('href') || '').split('#');
+        if(!nolink && /^\/wiki\/[^:]+$/.test(h[0]) && !c.classList.contains('new'))
+          o += '<a data-w="' + esc(c.getAttribute('title') || c.textContent) + '" data-l="' + esc((BY_WK[(h[1]||'').replace(/_/g,' ')]||{}).c || '') + '">' + safe(c) + '</a>';
+        else o += safe(c, nolink);
+      } else o += safe(c, nolink);
+    }
+  });
+  return o;
+}
+function region(s){
+  if(!s) return null;
+  const es = /\b(Spain|Peninsular|Castilian|Canary Islands|Andalusia)\b/i.test(s);
+  const la = /\b(Latin America|Americas|Mexico|Argentina|Colombia|Chile|Peru|Venezuela|Cuba|Caribbean|Central America|South America|Rioplatense|Uruguay|Ecuador|Bolivia|Paraguay|Costa Rica|Guatemala|Honduras|Nicaragua|Panama|Puerto Rico|Dominican Republic|El Salvador|Andes|Southern Cone)\b/i.test(s);
+  return es && !la ? 'ES' : la && !es ? 'LA' : null;
+}
+
+async function getDoc(title){
+  if(cache.has(title)) return cache.get(title);
+  const p = (async () => {
+    const r = await fetch(API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(title));
+    if(!r.ok) throw new Error('network');
+    const j = await r.json();
+    if(j.error) return null;
+    const d = new DOMParser().parseFromString(j.parse.text, 'text/html');
+    d.querySelectorAll('style,script,.mw-editsection,sup.reference,.maintenance-line,figure,.sister-project,.interproject-box,.checktrans,.thumb').forEach(e => e.remove());
+    return {title: j.parse.title, root: d.body.firstElementChild};
+  })();
+  cache.set(title, p);
+  p.catch(() => cache.delete(title));
+  return p;
+}
+async function suggest(q){
+  try{
+    const r = await fetch(API + '?action=opensearch&limit=7&namespace=0&format=json&origin=*&search=' + encodeURIComponent(q));
+    return (await r.json())[1] || [];
+  }catch(e){ return []; }
+}
+function sections(root){
+  const m = new Map(); let cur = null;
+  for(const c of root.children){
+    const h = c.matches('.mw-heading2') ? c.querySelector('h2') : null;
+    if(h){ cur = []; m.set(h.textContent.trim(), cur); continue; }
+    if(cur) cur.push(c);
+  }
+  return m;
+}
+/* Collect terms (word + transliteration + qualifier + gender) from a list item or nyms span. */
+function terms(box){
+  const out = []; let cur = null, pre = null;
+  box.querySelectorAll('[lang],.tr,.qualifier-content,.gender').forEach(e => {
+    const lg = e.getAttribute('lang') || '';
+    if(e.classList.contains('tr') || /-Latn$/.test(lg)){ if(cur && !cur.tr) cur.tr = txt(e); return; }
+    if(e.classList.contains('gender')){ if(cur) cur.g = txt(e); return; }
+    if(e.classList.contains('qualifier-content')){
+      const br = e.previousElementSibling, pv = br && br.previousSibling;
+      if(!cur || (pv && pv.nodeType === 3 && /[,;:]\s*$/.test(pv.nodeValue))) pre = txt(e);
+      else { cur.q = txt(e); cur.r = region(cur.q); }
+      return;
+    }
+    const p = e.parentElement.closest('[lang]');
+    if(p && p !== box && box.contains(p)) return;
+    const a = e.closest('a') || e.querySelector('a');
+    if(a && /^Thesaurus:/.test(a.getAttribute('title') || '')) return;
+    const t = txt(e); if(!t) return;
+    if(cur && cur.hant && !cur.tr && e.classList.contains('Hans')){ cur.alt = cur.t; cur.t = t; cur.hant = false; if(a && !a.classList.contains('new')) cur.w = a.getAttribute('title'); return; }
+    cur = {t, w: a && !a.classList.contains('new') && a.getAttribute('title') ? a.getAttribute('title') : t, hant: e.classList.contains('Hant')};
+    if(pre){ cur.q = pre; cur.r = region(pre); pre = null; }
+    out.push(cur);
+  });
+  return out;
+}
+function listTerms(el){
+  if(el.matches('.NavFrame,table')) return [];
+  const lis = el.tagName === 'UL' ? [...el.children] : [...el.querySelectorAll('li')];
+  return lis.flatMap(li => terms(li));
+}
+function pron(el, E){
+  const zp = el.matches('.zhpron') ? el : el.querySelector('.zhpron');
+  if(zp){ const py = zp.querySelector('[class*="pinyin"]'); if(py && !E.tr) E.tr = txt(py); }
+  const boxes = el.querySelectorAll('li').length ? [...el.querySelectorAll('li')] : [el];
+  boxes.forEach(b => {
+    const own = x => (x.closest('li') || el) === b;
+    const ipa = [...b.querySelectorAll('.IPA')].filter(own).map(txt).filter(x => !/^-/.test(x));
+    if(ipa.length && E.pron.length < (zp ? 1 : 6)){
+      const lb = [...b.querySelectorAll('.usage-label-accent,.qualifier-content')].filter(own)[0];
+      const label = txt(lb);
+      E.pron.push({ipa: ipa[0], label, r: region(label)});
+    }
+  });
+  el.querySelectorAll('audio').forEach(a => {
+    const s = a.querySelector('source[type="audio/mpeg"]') || a.querySelector('source');
+    if(!s) return;
+    let src = s.getAttribute('src') || ''; if(src.startsWith('//')) src = 'https:' + src;
+    const box = a.closest('li,tr,dd');
+    const label = box ? ((txt(box).match(/\(([^)]{2,40})\)/) || [])[1] || '') : '';
+    E.audio.push({src, label, r: region(label)});
+  });
+}
+function headInfo(hl){
+  const st = hl.querySelector('.headword');
+  const tr = hl.querySelector('.headword-tr') || hl.querySelector('.tr');
+  const c = hl.cloneNode(true);
+  c.querySelectorAll('.headword,.headword-tr').forEach(e => e.remove());
+  const info = txt(c).replace(/•\s*\(\s*\)/, '').replace(/^[\s•]+/, '').replace(/\(\s*\)/g, '').trim();
+  return {html: st ? safe(st) : '', text: txt(st), tr: txt(tr), info};
+}
+function example(x){
+  const e = x.querySelector('.e-example,.e-quotation'); if(!e) return null;
+  return {h: safe(e, true), tr: txt(x.querySelector('.e-transliteration')), t: txt(x.querySelector('.e-translation'))};
+}
+function zhExample(x){
+  if(!/Pinyin\]/.test(x.textContent)) return null;
+  const s = x.querySelector('.Hans') || x.querySelector('[lang^="zh"],[lang^="cmn"]'); if(!s) return null;
+  const tr = x.querySelector('[lang$="-Latn"],.tr,i.Latn');
+  const dd = [...x.querySelectorAll('dd')].pop();
+  return {h: safe(s, true), tr: txt(tr), t: dd ? txt(dd) : ''};
+}
+function senses(ol, P, depth){
+  for(const li of ol.children){
+    if(li.tagName !== 'LI') continue;
+    const c = li.cloneNode(true);
+    const S = {html:'', labels:[], syn:[], ant:[], ex:[], links:[], sub: depth > 0, formOf:null, r:null};
+    c.querySelectorAll(':scope > ol').forEach(o => o.remove());
+    c.querySelectorAll('.nyms').forEach(n => {
+      const k = n.classList.contains('synonym') ? 'syn' : n.classList.contains('antonym') ? 'ant' : null;
+      if(k) S[k].push(...terms(n));
+      n.remove();
+    });
+    c.querySelectorAll('.h-usage-example').forEach(x => { const e = example(x); if(e && S.ex.length < 4) S.ex.push(e); });
+    c.querySelectorAll('.zhusex').forEach(x => { const e = zhExample(x); if(e && S.ex.length < 4) S.ex.push(e); });
+    if(!S.ex.length){
+      const q = c.querySelector('.h-quotation'); const e = q && example(q);
+      if(e && e.h.length < 170 && !/ſ/.test(e.h)) S.ex.push(e);
+    }
+    c.querySelectorAll('dl,ul').forEach(e => e.remove());
+    c.querySelectorAll('.usage-label-sense').forEach(u => {
+      u.querySelectorAll('.ib-content').forEach(l => S.labels.push(...txt(l).split(/\s*,\s*/).filter(Boolean)));
+      u.remove();
+    });
+    S.r = region(S.labels.join(', '));
+    const fo = c.querySelector('.form-of-definition-link a'); if(fo) S.formOf = fo.getAttribute('title');
+    c.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
+      const h = a.getAttribute('href').split('#'); const t = a.getAttribute('title');
+      if(t && !/:/.test(t) && (!h[1] || h[1] === 'English') && !a.closest('.qualifier-content,.mention-gloss')) S.links.push(t);
+    });
+    S.html = safe(c).replace(/\s+/g, ' ').trim();
+    if(S.html) P.senses.push(S);
+    li.querySelectorAll(':scope > ol').forEach(o => senses(o, P, depth + 1));
+  }
+}
+const NOT_POS = /^(Etymology|Pronunciation|References|Further reading|See also|Anagrams|Descendants|Alternative forms|Conjugation|Declension|Inflection|Usage notes|Synonyms|Antonyms|Derived terms|Related terms|Translations|Quotations|Notes|Hyponyms|Hypernyms|Coordinate terms|Compounds|Collocations)/;
+function build(els, lc, title){
+  const E = {word: title, lc, tr:'', pron:[], audio:[], pos:[], syn:[], ant:[], rel:[], notes:[], tt:[], tsub:null, see:null};
+  let h = '', P = null;
+  for(const el of els){
+    const hd = el.matches('.mw-heading') && el.querySelector('h3,h4,h5,h6');
+    if(hd){ h = hd.textContent.trim(); continue; }
+    const see = el.matches('table[class*="-see"]') ? el : el.querySelector('table[class*="-see"]');
+    if(see && !E.see){ const a = [...see.querySelectorAll('a[href^="/wiki/"]')].find(a => /#(Chinese|Japanese)/.test(a.getAttribute('href')) && a.getAttribute('title') && !title.includes(a.getAttribute('title'))); if(a) E.see = a.getAttribute('title'); }
+    if(/^Pronunciation/.test(h)){ pron(el, E); continue; }
+    const hl = el.tagName === 'P' && el.querySelector('.headword-line');
+    if(hl){ P = {name: h, head: headInfo(hl), senses: []}; E.pos.push(P); continue; }
+    if(el.tagName === 'OL' && !NOT_POS.test(h)){
+      if(!P || P.name !== h){ P = {name: h, head: null, senses: []}; E.pos.push(P); }
+      senses(el, P, 0); continue;
+    }
+    const tabs = el.matches('table.translations') ? [el] : [...el.querySelectorAll('table.translations')];
+    tabs.forEach(t => E.tt.push({gloss: t.getAttribute('data-gloss') || '', pos: /^Translations/.test(h) ? (P ? P.name : '') : h, el: t}));
+    if(!tabs.length && /^Translations/.test(h)){
+      const a = el.querySelector('a[href*="/translations"]');
+      if(a) E.tsub = decodeURIComponent(a.getAttribute('href').replace(/^\/wiki\//, '').split('#')[0]).replace(/_/g, ' ');
+    }
+    if(/^Synonyms/.test(h)) E.syn.push(...listTerms(el));
+    else if(/^Antonyms/.test(h)) E.ant.push(...listTerms(el));
+    else if(/^(Derived|Related) terms/.test(h)){ if(E.rel.length < 40) E.rel.push(...listTerms(el).slice(0, 40 - E.rel.length)); }
+    else if(/^Usage notes/.test(h)){
+      (el.tagName === 'UL' ? [...el.children] : [el]).forEach(x => { const s = safe(x).replace(/\s+/g,' ').trim(); if(s && E.notes.length < 4) E.notes.push(s); });
+    }
+  }
+  E.pos = E.pos.filter(p => p.senses.length);
+  const h0 = E.pos.find(p => p.head); if(h0 && !E.tr) E.tr = h0.head.tr;
+  return E;
+}
+/* Look a word up. Returns {title, entries:{code:Entry}, others:[language names]} or null if the page does not exist. */
+async function lookup(word){
+  let d = await getDoc(word);
+  if(!d && word !== word.toLowerCase()) d = await getDoc(word.toLowerCase());
+  if(!d) return null;
+  const secs = sections(d.root), entries = {}, others = [];
+  for(const [name, els] of secs){
+    const L = BY_WK[name];
+    if(!L){ others.push(name); continue; }
+    let E = build(els, L.c, d.title);
+    if(!E.pos.length && E.see){
+      const d2 = await getDoc(E.see); const s2 = d2 && sections(d2.root).get(name);
+      if(s2){ E = build(s2, L.c, d2.title); E.typed = d.title; }
+    }
+    if(E.pos.length) entries[L.c] = E;
+  }
+  return {title: d.title, entries, others};
+}
+/* Translations of an English entry into the wanted languages, grouped by sense. */
+function readTables(tt, codes){
+  const out = [];
+  for(const T of tt){
+    const by = {};
+    T.el.querySelectorAll('li').forEach(li => {
+      if(li.parentElement.closest('li')) return;
+      const name = (li.firstChild && li.firstChild.nodeType === 3 ? li.firstChild.nodeValue : '').split(':')[0].trim();
+      const L = BY_WK[name]; if(!L || !codes.includes(L.c)) return;
+      let box = li.cloneNode(true);
+      if(L.tw){
+        box = [...box.querySelectorAll('dd')].find(d => txt(d).startsWith(L.tw + ':'));
+        if(!box) return;
+      } else box.querySelectorAll('dl').forEach(d => d.remove());
+      const ts = terms(box); if(ts.length) by[L.c] = ts;
+    });
+    if(Object.keys(by).length) out.push({gloss: T.gloss, pos: T.pos, by});
+  }
+  return out;
+}
+async function translations(enWord, codes){
+  const d = await getDoc(enWord); if(!d) return [];
+  const els = sections(d.root).get('English'); if(!els) return [];
+  const E = build(els, 'en', d.title);
+  let tt = E.tt;
+  if(E.tsub){
+    const d2 = await getDoc(E.tsub); const s2 = d2 && sections(d2.root).get('English');
+    if(s2) tt = tt.concat(build(s2, 'en', d2.title).tt);
+  }
+  return readTables(tt, codes);
+}
+const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, esc, region};
+
+/* ===== UI ===== */
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('dz.' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('dz.' + k, JSON.stringify(v)); }catch(e){} }
+};
+const S = {
+  langs: store.get('langs', ['it','en','es','zh','ja','fr','si']),
+  es: store.get('es', 'both'),
+  ui: store.get('ui', (navigator.language || 'it').startsWith('it') ? 'it' : 'en'),
+  size: store.get('size', 1),
+  theme: store.get('theme', 'light'),
+  recent: store.get('recent', []),
+  saved: store.get('saved', []),
+  last: store.get('last', '')
+};
+const TXT = {
+  it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
+    nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',
+    copy:'Copia', copied:'Copiata!', more:'Mostra altri', notFound:'Non trovo', maybe:'Forse cercavi:', noLang:'Questa parola esiste, ma non in una delle tue lingue.',
+    also:'Esiste in:', net:'Non riesco a collegarmi. Controlla la connessione e riprova.', loading:'Cerco…', via:'Passando dall’inglese:',
+    noTrans:'Nessuna traduzione trovata nelle tue lingue.', noNyms:'Wiktionary non ha ancora sinonimi o contrari per questa parola.', forms:'Forme', notes:'Note d’uso',
+    wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
+    both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
+    src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba'},
+  en: {ph:'Type a word…', go:'Search', recent:'Recent', saved:'Saved', meaning:'Meaning', syn:'Synonyms', ant:'Opposites',
+    nyms:'Synonyms & opposites', trans:'Translations', rel:'Related words', help:'Helpers', all:'All', listen:'Listen', save:'Save', unsave:'Saved',
+    copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
+    also:'It exists in:', net:'I can’t connect. Check your connection and try again.', loading:'Searching…', via:'Going through English:',
+    noTrans:'No translations found in your languages.', noNyms:'Wiktionary has no synonyms or opposites for this word yet.', forms:'Forms', notes:'Usage notes',
+    wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
+    both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
+    src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba'}
+};
+const POS_IT = {Noun:'Sostantivo', Verb:'Verbo', Adjective:'Aggettivo', Adverb:'Avverbio', Pronoun:'Pronome', Preposition:'Preposizione', Conjunction:'Congiunzione',
+  Interjection:'Interiezione', 'Proper noun':'Nome proprio', Numeral:'Numerale', Article:'Articolo', Determiner:'Determinante', Particle:'Particella', Phrase:'Frase',
+  Idiom:'Modo di dire', Proverb:'Proverbio', Definitions:'Significati', Prefix:'Prefisso', Suffix:'Suffisso', Classifier:'Classificatore', Counter:'Contatore'};
+const t = k => TXT[S.ui][k];
+const posName = n => { n = n.replace(/ \d+$/, ''); return S.ui === 'it' ? (POS_IT[n] || n) : n; };
+const langName = c => { const L = Core.BY_C[c]; return S.ui === 'it' ? L.it : L.wk; };
+const out = $('#out'), input = $('#q'), sug = $('#sug');
+let R = null, token = 0, focus = 'all';
+
+function applyPrefs(){
+  document.documentElement.dataset.theme = S.theme;
+  document.documentElement.dataset.size = S.size;
+  document.documentElement.lang = S.ui;
+  input.placeholder = t('ph'); $('#go').textContent = t('go'); $('#src').textContent = t('src');
+  $('#brand').textContent = t('title'); document.title = t('title');
+  $('#bsize').title = t('size'); $('#btheme').title = t('theme'); $('#bset').title = t('settings');
+}
+function regionBadge(r){ return r ? '<span class="rg rg-' + r + '">' + (r === 'ES' ? 'ES' : 'LATAM') + '</span>' : ''; }
+function chip(x, lc, kind){
+  const dim = lc === 'es' && S.es !== 'both' && x.r && x.r !== S.es;
+  return '<button class="chip ' + (kind || '') + (dim ? ' dim' : '') + '" data-w="' + esc(x.w || x.t) + '" data-l="' + lc + '">' +
+    '<span class="ct" lang="' + lc + '">' + esc(x.t) + '</span>' +
+    (x.alt ? '<span class="calt" lang="' + lc + '">' + esc(x.alt) + '</span>' : '') +
+    (x.tr ? '<span class="ctr">' + esc(x.tr) + '</span>' : '') +
+    (x.g ? '<span class="cg">' + esc(x.g) + '</span>' : '') +
+    (x.r ? regionBadge(x.r) : (x.q ? '<span class="cq">' + esc(x.q.slice(0, 28)) + '</span>' : '')) + '</button>';
+}
+function wordChips(list){
+  return list.map(x => '<button class="chip plain" data-w="' + esc(x.w) + '" data-l="' + (x.l || '') + '">' + esc(x.w) +
+    (x.l ? '<span class="cq">' + x.l.toUpperCase() + '</span>' : '') + '</button>').join('');
+}
+function scriptOf(w, avail){
+  const has = c => avail.includes(c);
+  if(/[඀-෿]/.test(w) && has('si')) return 'si';
+  if(/[぀-ヿ]/.test(w) && has('ja')) return 'ja';
+  if(/[一-鿿]/.test(w)) return S.last === 'ja' && has('ja') ? 'ja' : has('zh') ? 'zh' : has('ja') ? 'ja' : null;
+  if(/[가-힯]/.test(w) && has('ko')) return 'ko';
+  if(/[Ѐ-ӿ]/.test(w) && has('ru')) return 'ru';
+  if(/[؀-ۿ]/.test(w) && has('ar')) return 'ar';
+  if(/[ऀ-ॿ]/.test(w) && has('hi')) return 'hi';
+  return null;
+}
+function home(){
+  R = null; token++; input.value = '';
+  if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+  out.innerHTML = '<p class="hint">' + t('hint') + '</p>' +
+    (S.saved.length ? '<section class="shelf"><h2>★ ' + t('saved') + '</h2><div class="chips">' + wordChips(S.saved) + '</div></section>' : '') +
+    (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent) + '</div></section>' : '');
+}
+function message(html){ out.innerHTML = '<div class="msg">' + html + '</div>'; }
+
+async function search(w, hint){
+  w = (w || '').trim(); if(!w) return home();
+  const my = ++token; input.value = w; sug.hidden = true;
+  message('<span class="spin"></span>' + t('loading'));
+  let r;
+  try{ r = await Core.lookup(w); }catch(e){ if(my === token) message(t('net')); return; }
+  if(my !== token) return;
+  if(!r){
+    const sg = (await Core.suggest(w)).filter(x => x !== w);
+    if(my !== token) return;
+    return message(t('notFound') + ' <b>“' + esc(w) + '”</b>.' + (sg.length ? '<p>' + t('maybe') + '</p><div class="chips">' + wordChips(sg.map(x => ({w: x}))) + '</div>' : ''));
+  }
+  const avail = S.langs.filter(c => r.entries[c]);
+  if(!avail.length){
+    const names = Object.keys(r.entries).map(langName).concat(r.others).slice(0, 12);
+    return message(t('noLang') + (names.length ? '<p>' + t('also') + ' ' + esc(names.join(', ')) + '</p>' : ''));
+  }
+  const cur = hint && avail.includes(hint) ? hint : scriptOf(r.title, avail) || (avail.includes(S.last) ? S.last : avail[0]);
+  R = {r, avail, cur, pivot: null};
+  focus = 'all';
+  if(decodeURIComponent(location.hash.slice(1)) !== r.title) location.hash = encodeURIComponent(r.title);
+  show();
+}
+function remember(){
+  const w = R.r.title, l = R.cur;
+  S.recent = [{w, l}].concat(S.recent.filter(x => !(x.w === w && x.l === l))).slice(0, 14);
+  store.set('recent', S.recent);
+}
+const isSaved = () => S.saved.some(x => x.w === R.r.title && x.l === R.cur);
+
+function show(){
+  const E = R.r.entries[R.cur], lc = R.cur, L = Core.BY_C[lc];
+  remember();
+  let n = 0; E.pos.forEach(p => p.senses.forEach(s => { s.n = ++n; }));
+  const h0 = E.pos.find(p => p.head);
+  let big = E.typed ? esc(E.typed) : (h0 && h0.head.html ? h0.head.html.replace(/<\/?a[^>]*>/g, '') : esc(E.word));
+  const alt = E.typed && E.typed !== E.word ? E.word : '';
+  let pr = E.pron;
+  if(lc === 'es' && S.es !== 'both'){ const m = pr.filter(p => !p.r || p.r === S.es); if(m.length) pr = m; }
+  pr = pr.slice(0, lc === 'es' || lc === 'en' ? 2 : 1);
+  let h = '';
+  if(R.avail.length > 1) h += '<nav class="tabs">' + R.avail.map(c => '<button class="tab' + (c === lc ? ' on' : '') + '" data-tab="' + c + '">' + esc(Core.BY_C[c].n) + '</button>').join('') + '</nav>';
+  h += '<header class="word"><div class="wl">' + esc(L.n) + (lc === 'es' && S.es !== 'both' ? ' · ' + t(S.es) : '') + '</div>' +
+    '<h1 lang="' + lc + '">' + big + (alt ? ' <small lang="' + lc + '">' + esc(alt) + '</small>' : '') + '</h1>' +
+    (E.tr ? '<div class="roman">' + esc(E.tr) + '</div>' : '') +
+    (pr.length ? '<div class="ipa">' + pr.map(p => '<span>' + esc(p.ipa) + (p.r ? ' ' + regionBadge(p.r) : (p.label && pr.length > 1 ? ' <em>' + esc(p.label.split(',')[0]) + '</em>' : '')) + '</span>').join('') + '</div>' : '') +
+    '<div class="acts"><button class="act" data-act="listen">🔊 ' + t('listen') + '</button>' +
+    '<button class="act' + (isSaved() ? ' on' : '') + '" data-act="save">' + (isSaved() ? '★ ' + t('unsave') : '☆ ' + t('save')) + '</button>' +
+    '<button class="act" data-act="copy">⧉ ' + t('copy') + '</button></div></header>';
+  h += '<nav class="focus">' + [['all','all'],['mean','meaning'],['nyms','nyms'],['tr','trans']].map(f =>
+    '<button data-focus="' + f[0] + '" class="' + (focus === f[0] ? 'on' : '') + '">' + t(f[1]) + '</button>').join('') + '</nav>';
+
+  /* meanings */
+  h += '<section class="card mean" data-k="mean"><h2>' + t('meaning') + '</h2>';
+  E.pos.forEach(p => {
+    h += '<h3>' + esc(posName(p.name)) + '</h3><ol class="senses">';
+    p.senses.forEach((s, i) => {
+      const dim = lc === 'es' && S.es !== 'both' && s.r && s.r !== S.es;
+      h += '<li class="sense' + (s.sub ? ' sub' : '') + (dim ? ' dim' : '') + (i >= 5 ? ' extra' : '') + '"><span class="num">' + s.n + '</span><div>' +
+        '<p class="def">' + regionBadge(s.r) + s.labels.filter(l => !Core.region(l)).slice(0, 3).map(l => '<span class="lb">' + esc(l) + '</span>').join('') + ' ' + s.html + '</p>' +
+        s.ex.slice(0, 2).map(e => '<div class="ex"><span class="ex-t" lang="' + lc + '">' + e.h + '</span>' +
+          (e.tr ? '<span class="ex-r">' + esc(e.tr) + '</span>' : '') + (e.t ? '<span class="ex-m">' + esc(e.t) + '</span>' : '') + '</div>').join('') +
+        (s.formOf ? '<button class="chip plain" data-w="' + esc(s.formOf) + '" data-l="' + lc + '">→ ' + t('goLemma') + ' <b>' + esc(s.formOf) + '</b></button>' : '') +
+        '</div></li>';
+    });
+    h += '</ol>';
+    if(p.senses.length > 5) h += '<button class="morebtn" data-more>' + t('more') + ' ' + (p.senses.length - 5) + '</button>';
+  });
+  h += '</section>';
+
+  /* synonyms & antonyms */
+  const nym = (key, cls, title) => {
+    let rows = '';
+    E.pos.forEach(p => p.senses.forEach(s => { if(s[key].length) rows += '<div class="nrow"><span class="num">' + s.n + '</span><div class="chips">' + s[key].map(x => chip(x, lc, cls)).join('') + '</div></div>'; }));
+    if(E[key].length) rows += '<div class="nrow"><span class="num gen">∗</span><div class="chips">' + E[key].slice(0, 30).map(x => chip(x, lc, cls)).join('') + '</div></div>';
+    return rows ? '<section class="card ' + cls + '" data-k="nyms"><h2>' + title + '</h2>' + rows + '</section>' : '';
+  };
+  const nyms = nym('syn', 'syn', t('syn')) + nym('ant', 'ant', t('ant'));
+  h += nyms || '<section class="card syn quiet" data-k="nyms"><p class="muted">' + t('noNyms') + '</p></section>';
+
+  /* translations (filled in asynchronously) */
+  h += '<section class="card tr" data-k="tr"><h2>' + t('trans') + '</h2><div id="trbox"><span class="spin"></span></div></section>';
+
+  /* related words */
+  if(E.rel.length) h += '<details class="card rel" data-k="all"><summary>' + t('rel') + ' (' + E.rel.length + ')</summary><div class="chips">' + E.rel.map(x => chip(x, lc, '')).join('') + '</div></details>';
+
+  /* helpers */
+  h += '<section class="card help" data-k="all"><h2>' + t('help') + '</h2>';
+  E.pos.forEach(p => { if(p.head && p.head.info) h += '<p><b>' + t('forms') + ' · ' + esc(posName(p.name)) + ':</b> <span lang="' + lc + '">' + esc(p.head.info) + '</span></p>'; });
+  if(E.notes.length) h += '<p><b>' + t('notes') + ':</b></p><ul>' + E.notes.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+  h += '<p class="muted">' + t('defsIn') + '</p><p><a class="ext" target="_blank" rel="noopener" href="https://en.wiktionary.org/wiki/' + encodeURIComponent(E.word) + '#' + L.wk + '">' + t('wikt') + ' ↗</a></p></section>';
+
+  out.innerHTML = h; out.dataset.focus = focus;
+  window.scrollTo(0, 0);
+  loadTrans();
+}
+
+async function loadTrans(){
+  const my = token, E = R.r.entries[R.cur], lc = R.cur, box = $('#trbox');
+  const targets = S.langs.filter(c => c !== lc && c !== 'en');
+  let pivots = [], word = E.word, wantPos = null;
+  if(lc !== 'en'){
+    E.pos.forEach(p => p.senses.forEach(s => { const k = s.links[0]; if(k && pivots.length < 6 && !pivots.some(x => x.w === k)) pivots.push({w: k, pos: p.name.replace(/ \d+$/, '')}); }));
+    if(!pivots.length){ box.innerHTML = '<p class="muted">' + t('noTrans') + '</p>'; return; }
+    const pv = pivots.find(x => x.w === R.pivot) || pivots[0];
+    word = pv.w; wantPos = pv.pos; R.pivot = pv.w;
+  }
+  let groups = [];
+  try{ groups = await Core.translations(word, targets); }catch(e){ if(my === token) box.innerHTML = '<p class="muted">' + t('net') + '</p>'; return; }
+  if(my !== token || !$('#trbox')) return;
+  if(wantPos){ const m = groups.filter(g => g.pos.replace(/ \d+$/, '') === wantPos); if(m.length) groups = m; }
+  let h = '';
+  if(lc !== 'en') h += '<div class="pivots"><span class="muted">' + t('via') + '</span> ' + pivots.map(p =>
+    '<button class="pv' + (p.w === word ? ' on' : '') + '" data-pivot="' + esc(p.w) + '" lang="en">' + esc(p.w) + '</button>').join('') + '</div>';
+  if(!groups.length) h += '<p class="muted">' + t('noTrans') + '</p>';
+  const grp = (g, extra) => {
+    let s = '<div class="tg' + (extra ? ' extra' : '') + '"><h3 lang="en">' + (lc !== 'en' ? '<b>' + esc(word) + '</b> · ' : '') + esc(g.gloss || '') + '</h3>';
+    targets.forEach(c => {
+      let ts = g.by[c]; if(!ts) return;
+      if(c === 'es' && S.es !== 'both') ts = ts.slice().sort((a, b) => (a.r && a.r !== S.es ? 1 : 0) - (b.r && b.r !== S.es ? 1 : 0));
+      s += '<div class="trow"><span class="tl">' + esc(Core.BY_C[c].n) + '</span><div class="chips">' + ts.slice(0, 8).map(x => chip(x, c, 'trc')).join('') + '</div></div>';
+    });
+    return s + '</div>';
+  };
+  groups.forEach((g, i) => { h += grp(g, i >= 3); });
+  if(groups.length > 3) h += '<button class="morebtn" data-more>' + t('otherSenses') + ' (' + (groups.length - 3) + ')</button>';
+  box.innerHTML = h;
+}
+
+/* listen: recorded audio from Wiktionary when there is one, else the device voice */
+function speak(){
+  if(!('speechSynthesis' in window)) return;
+  const E = R.r.entries[R.cur], u = new SpeechSynthesisUtterance(E.typed || E.word);
+  u.lang = R.cur === 'es' && S.es === 'LA' ? 'es-MX' : Core.BY_C[R.cur].sp; u.rate = 0.85;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function listen(){
+  const E = R.r.entries[R.cur]; let a = E.audio;
+  if(R.cur === 'es' && S.es !== 'both'){ const m = a.filter(x => x.r === S.es); a = m.length ? m : a.filter(x => !x.r); }
+  if(!a.length) return speak();
+  try{ new Audio(a[0].src).play().catch(speak); }catch(e){ speak(); }
+}
+
+/* settings */
+function openSettings(){
+  const d = $('#set');
+  d.innerHTML = '<h2>' + t('settings') + '</h2><h3>' + t('myLangs') + '</h3><div class="lgrid">' +
+    Core.LANGS.map(L => '<label><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
+    '</div><h3>' + t('esVar') + '</h3><div class="seg">' + ['both','ES','LA'].map(v => '<button data-es="' + v + '" class="' + (S.es === v ? 'on' : '') + '">' + t(v) + '</button>').join('') +
+    '</div><h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
+    '</div><button class="done" data-close>' + t('close') + '</button>';
+  if(d.showModal) d.showModal(); else d.setAttribute('open', '');
+}
+$('#set').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.es){ S.es = b.dataset.es; store.set('es', S.es); openSettingsRefresh(); }
+  else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); applyPrefs(); openSettingsRefresh(); }
+  else if('close' in b.dataset){ $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); }
+});
+function openSettingsRefresh(){ const d = $('#set'); if(d.close && d.open) d.close(); openSettings(); }
+$('#set').addEventListener('change', e => {
+  const c = e.target.dataset.lang; if(!c) return;
+  const on = new Set(S.langs); e.target.checked ? on.add(c) : on.delete(c);
+  S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x));
+  if(!S.langs.length) S.langs = ['en'];
+  store.set('langs', S.langs);
+});
+$('#set').addEventListener('close', () => { if(R) search(R.r.title, R.cur); else home(); });
+
+/* events */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-w],[data-tab],[data-focus],[data-act],[data-more],[data-pivot]');
+  if(!b || b.closest('#set')) return;
+  const d = b.dataset;
+  if(d.w !== undefined){ search(d.w, d.l || 'en'); }
+  else if(d.tab){ R.cur = d.tab; R.pivot = null; S.last = d.tab; store.set('last', S.last); show(); }
+  else if(d.focus){ focus = d.focus; out.dataset.focus = focus; out.querySelectorAll('.focus button').forEach(x => x.classList.toggle('on', x === b)); }
+  else if(d.pivot){ R.pivot = d.pivot; $('#trbox').innerHTML = '<span class="spin"></span>'; loadTrans(); }
+  else if('more' in d){ b.parentElement.querySelectorAll('.extra').forEach(x => x.classList.remove('extra')); b.remove(); }
+  else if(d.act === 'listen') listen();
+  else if(d.act === 'save'){
+    const w = R.r.title, l = R.cur;
+    S.saved = isSaved() ? S.saved.filter(x => !(x.w === w && x.l === l)) : [{w, l}].concat(S.saved);
+    store.set('saved', S.saved);
+    b.classList.toggle('on', isSaved()); b.textContent = isSaved() ? '★ ' + t('unsave') : '☆ ' + t('save');
+  }
+  else if(d.act === 'copy'){
+    const E = R.r.entries[R.cur], w = E.typed || E.word;
+    const ok = () => { b.textContent = '✓ ' + t('copied'); setTimeout(() => { b.textContent = '⧉ ' + t('copy'); }, 1400); };
+    try{ navigator.clipboard.writeText(w).then(ok, () => {}); }catch(err){}
+  }
+});
+$('#form').addEventListener('submit', e => { e.preventDefault(); search(input.value); input.blur(); });
+let st = 0;
+input.addEventListener('input', () => {
+  clearTimeout(st); const v = input.value.trim();
+  if(v.length < 2){ sug.hidden = true; return; }
+  st = setTimeout(async () => {
+    const list = await Core.suggest(v);
+    if(input.value.trim() !== v || document.activeElement !== input) return;
+    sug.innerHTML = list.map(x => '<button type="button" data-w="' + esc(x) + '" data-l="">' + esc(x) + '</button>').join('');
+    sug.hidden = !list.length;
+  }, 220);
+});
+sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w); } });
+input.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 180));
+$('#brand').addEventListener('click', e => { e.preventDefault(); home(); input.focus(); });
+$('#bsize').addEventListener('click', () => { S.size = (S.size + 1) % 3; store.set('size', S.size); applyPrefs(); });
+$('#btheme').addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; store.set('theme', S.theme); applyPrefs(); });
+$('#bset').addEventListener('click', openSettings);
+document.addEventListener('keydown', e => { if(e.key === '/' && document.activeElement !== input && !$('#set').open){ e.preventDefault(); input.focus(); input.select(); } });
+window.addEventListener('hashchange', () => {
+  const w = decodeURIComponent(location.hash.slice(1));
+  if(!w) return home();
+  if(!R || R.r.title !== w) search(w);
+});
+applyPrefs();
+if(location.hash.length > 1) search(decodeURIComponent(location.hash.slice(1))); else home();
+
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+</script>
+</body>
+</html>

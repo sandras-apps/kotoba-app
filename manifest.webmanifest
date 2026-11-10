@@ -1,0 +1,14 @@
+{
+  "name": "Kotoba",
+  "short_name": "Kotoba",
+  "description": "A calm, fast multilingual dictionary. Data from Wiktionary. No AI.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5EFE6",
+  "theme_color": "#F5EFE6",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
