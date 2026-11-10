@@ -11,7 +11,7 @@ A calm, fast multilingual dictionary for writers and language learners.
 - **Spanish from Spain vs Latin America**: regional words and pronunciations are labelled (ES / LATAM)
 - **Easy on the eyes**: one column, soft colours, large adjustable text, light and dark theme, one section at a time if you want
 - **Favourite words**: save the words you like and find them in one list, filtered by language
-- **No AI, no account, no tracking.** Saved words and settings stay in your browser.
+- **No AI, no account.** Saved words, notes and settings stay in your browser. Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/help/privacy) (no cookies, no personal data).
 
 ## Languages
 

@@ -31,6 +31,8 @@ ${r('style.css')}</style>
 <main class="wrap" id="out"></main>
 <footer class="wrap"><span id="src"></span></footer>
 <dialog id="set"></dialog>
+<!-- Anonymous visit count (GoatCounter): pageviews only, no cookies. If it can't load, nothing else is affected. -->
+<script data-goatcounter="https://kotoba-app.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <script>
 ${r('core.js')}
 ${r('ui.js')}

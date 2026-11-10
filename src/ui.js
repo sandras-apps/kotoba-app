@@ -23,9 +23,9 @@ const TXT = {
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', PT:'Portogallo', BR:'Brasile', UK:'Regno Unito', US:'Stati Uniti', FR:'Francia', CA:'Canada', simp:'Semplificato', trad:'Tradizionale',
     vq_es:'Quale spagnolo?', vq_pt:'Quale portoghese?', vq_en:'Quale inglese?', vq_fr:'Quale francese?', vq_zh:'Quale scrittura cinese?', via2:'tramite', latinHint:'Giapponese e singalese si possono scrivere anche con lettere latine: neko → 猫, balla → බල්ලා.', inScript:'In altre scritture:', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
-    src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
+    src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI · Visite contate in modo anonimo', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
     size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
-    instT:'Aggiungi alla schermata Home', instD:'iPhone: apri il sito in Safari, tocca Condividi, poi "Aggiungi alla schermata Home". Android: in Chrome tocca il menu ⋮, poi "Installa app".', instB:'Installa Kotoba', installed:'Kotoba è installata.',
+    privT:'Privacy', privD:'Le tue parole, le note e le impostazioni restano solo su questo dispositivo. Conto le visite in modo anonimo con GoatCounter: niente cookie, niente dati personali.', privL:'Informativa di GoatCounter', instT:'Aggiungi alla schermata Home', instD:'iPhone: apri il sito in Safari, tocca Condividi, poi "Aggiungi alla schermata Home". Android: in Chrome tocca il menu ⋮, poi "Installa app".', instB:'Installa Kotoba', installed:'Kotoba è installata.',
     shareT:'Ti piace?', shareD:'Condividila con qualcuno a cui potrebbe servire.', shareB:'Condividi Kotoba', shareTxt:'Kotoba: un dizionario calmo per scrivere e imparare le lingue. Gratis, senza account.', linkCopied:'Link copiato!',
     moreT:'Altre app di Sandra', moreD:'Ti piace Kotoba? Ho fatto anche queste.',
     appInward:'Una domanda profonda al giorno, da rispondere sul tuo diario di carta. Gratis, senza account.',
@@ -51,9 +51,9 @@ const TXT = {
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages',
     both:'Both', ES:'Spain', LA:'Latin America', PT:'Portugal', BR:'Brazil', UK:'United Kingdom', US:'United States', FR:'France', CA:'Canada', simp:'Simplified', trad:'Traditional',
     vq_es:'Which Spanish?', vq_pt:'Which Portuguese?', vq_en:'Which English?', vq_fr:'Which French?', vq_zh:'Which Chinese script?', via2:'via', latinHint:'Japanese and Sinhala can also be typed with Latin letters: neko → 猫, balla → බල්ලා.', inScript:'In other scripts:', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
-    src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
+    src:'Data from Wiktionary (CC BY-SA 4.0) · No AI · Anonymous visit count', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
     size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
-    instT:'Add to Home Screen', instD:'iPhone: open the site in Safari, tap Share, then "Add to Home Screen". Android: in Chrome tap the ⋮ menu, then "Install app".', instB:'Install Kotoba', installed:'Kotoba is installed.',
+    privT:'Privacy', privD:'Your words, notes and settings stay only on this device. Visits are counted anonymously with GoatCounter: no cookies, no personal data.', privL:'GoatCounter privacy policy', instT:'Add to Home Screen', instD:'iPhone: open the site in Safari, tap Share, then "Add to Home Screen". Android: in Chrome tap the ⋮ menu, then "Install app".', instB:'Install Kotoba', installed:'Kotoba is installed.',
     shareT:'Enjoying it?', shareD:'Share it with someone who might find it useful.', shareB:'Share Kotoba', shareTxt:'Kotoba: a calm dictionary for writing and learning languages. Free, no account.', linkCopied:'Link copied!',
     moreT:'More apps by Sandra', moreD:"Like Kotoba? I've made these too.",
     appInward:'One deep question a day, to answer in your own paper journal. Free, no account.',
@@ -143,7 +143,7 @@ function home(){
     '<section class="card wotd" id="wotd" hidden></section>' +
     '<button class="act surprise" data-surprise>' + t('surprise') + '</button>' +
     (S.saved.length ? '<section class="shelf"><h2>★ ' + t('favs') + '</h2><div class="chips">' + wordChips(S.saved.slice(0, 8)) + '</div>' + (S.saved.length > 8 ? '<button class="morebtn" data-nav="favs">' + t('seeAll') + ' (' + S.saved.length + ')</button>' : '') + '</section>' : '') +
-    (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent.slice(0, 8)) + '</div></section>' : '') + extras();
+    (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent.slice(0, 8)) + '</div></section>' : '');
   loadWotd();
 }
 function message(html){ out.innerHTML = '<div class="msg">' + html + '</div>'; }
@@ -367,7 +367,9 @@ function renderSettings(){
   d.innerHTML = '<h2>' + t('settings') + '</h2><h3>' + t('myLangs') + '</h3><div class="lgrid">' +
     Core.LANGS.map(L => '<label><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
     '</div>' + varBlocks(S.langs, 'data-var') + '<h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
-    '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button><button class="done" data-close>' + t('close') + '</button>';
+    '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button>' + extras() +
+    '<section class="xcard priv"><h2>' + t('privT') + '</h2><p>' + t('privD') + ' <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">' + t('privL') + '</a></p></section>' +
+    '<button class="done" data-close>' + t('close') + '</button>';
 }
 function openSettings(){
   renderSettings(); const d = $('#set');
