@@ -232,3 +232,5 @@ body.welcoming .top{border-bottom-color:transparent}
 #set .xcard h2{font-size:1.05rem}
 #set .priv{margin-top:12px}
 #set .priv a{color:var(--pri);font-weight:700}
+.chip.wl.locked{opacity:1;cursor:default;background:var(--pfill)}
+.lgrid label.locked{opacity:.75;cursor:default}

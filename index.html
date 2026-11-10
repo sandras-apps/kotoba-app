@@ -247,6 +247,8 @@ body.welcoming .top{border-bottom-color:transparent}
 #set .xcard h2{font-size:1.05rem}
 #set .priv{margin-top:12px}
 #set .priv a{color:var(--pri);font-weight:700}
+.chip.wl.locked{opacity:1;cursor:default;background:var(--pfill)}
+.lgrid label.locked{opacity:.75;cursor:default}
 </style>
 </head>
 <body>
@@ -784,7 +786,8 @@ const store = {
   set(k, v){ try{ localStorage.setItem('dz.' + k, JSON.stringify(v)); }catch(e){} }
 };
 const S = {
-  langs: (l => l && l.length ? l : ['it','en','es','zh','ja','fr','si'])(store.get('langs', null)),
+  picked: (l => Array.isArray(l) ? l : ['it','en','es','zh','ja','fr','si'])(store.get('langs', null)),
+  langs: [],
   vars: Object.assign({es: store.get('es', 'both'), pt: 'both', en: 'both', fr: 'both', zh: 'simp'}, store.get('vars', {})),
   ui: store.get('ui', (navigator.language || 'it').startsWith('it') ? 'it' : 'en'),
   size: Math.min(3, Math.max(0, store.get('size', 1))),
@@ -793,6 +796,10 @@ const S = {
   saved: store.get('saved', []),
   last: store.get('last', '')
 };
+/* The app's own language is always one of your languages; the others are the ones you pick. */
+function syncLangs(){ S.langs = Core.LANGS.map(L => L.c).filter(c => S.picked.includes(c) || c === S.ui); }
+function setPicked(list){ S.picked = Core.LANGS.map(L => L.c).filter(c => list.includes(c)); store.set('langs', S.picked); syncLangs(); }
+syncLangs();
 const TXT = {
   it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
     nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',
@@ -821,7 +828,7 @@ const TXT = {
     wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
     w1:'Scrivi una parola in una delle tue lingue.', w2:'Trovi significato, esempi, sinonimi, contrari e traduzioni, con la scrittura originale e la pronuncia.',
     w3:'Tocca una parola colorata per cercarla. Salva con ☆ quelle che ti piacciono.',
-    wLangs:'Quali lingue usi? Toccale per sceglierle.', pickOne:'Scegli almeno una lingua', nChosen:'Lingue scelte:', trMissing:'Wiktionary non ha ancora una traduzione in:', yourLangs:'Le tue lingue:', change:'Cambia', wLater:'Puoi cambiarle quando vuoi da ⚙.', start:'Inizia', reWelcome:'Rivedi il benvenuto', noAI:'Niente AI, niente account: i dati vengono da Wiktionary e le tue parole restano sul tuo dispositivo.'},
+    wLangs:'Quali lingue usi? Toccale per sceglierle.', pickOne:'Scegli almeno una lingua', appLang:'lingua dell\u2019app', appLangNote:'La lingua dell\u2019app è sempre inclusa.', nChosen:'Lingue scelte:', trMissing:'Wiktionary non ha ancora una traduzione in:', yourLangs:'Le tue lingue:', change:'Cambia', wLater:'Puoi cambiarle quando vuoi da ⚙.', start:'Inizia', reWelcome:'Rivedi il benvenuto', noAI:'Niente AI, niente account: i dati vengono da Wiktionary e le tue parole restano sul tuo dispositivo.'},
   en: {ph:'Type a word…', go:'Search', recent:'Recent', saved:'Saved', meaning:'Meaning', syn:'Synonyms', ant:'Opposites',
     nyms:'Synonyms & opposites', trans:'Translations', rel:'Related words', help:'Helpers', all:'All', listen:'Listen', save:'Save', unsave:'Saved',
     copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
@@ -849,7 +856,7 @@ const TXT = {
     wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
     w1:'Type a word in any of your languages.', w2:'You get meanings, examples, synonyms, opposites and translations, in the original script with pronunciation.',
     w3:'Tap a coloured word to look it up. Save the ones you like with ☆.',
-    wLangs:'Which languages do you use? Tap to choose them.', pickOne:'Choose at least one language', nChosen:'Chosen languages:', trMissing:'Wiktionary has no translation yet in:', yourLangs:'Your languages:', change:'Change', wLater:'You can change them any time from ⚙.', start:'Start', reWelcome:'See the welcome again', noAI:'No AI, no account: the data comes from Wiktionary and your words stay on your device.'}
+    wLangs:'Which languages do you use? Tap to choose them.', pickOne:'Choose at least one language', appLang:'app language', appLangNote:'The app language is always included.', nChosen:'Chosen languages:', trMissing:'Wiktionary has no translation yet in:', yourLangs:'Your languages:', change:'Change', wLater:'You can change them any time from ⚙.', start:'Start', reWelcome:'See the welcome again', noAI:'No AI, no account: the data comes from Wiktionary and your words stay on your device.'}
 };
 const POS_IT = {Noun:'Sostantivo', Verb:'Verbo', Adjective:'Aggettivo', Adverb:'Avverbio', Pronoun:'Pronome', Preposition:'Preposizione', Conjunction:'Congiunzione',
   Interjection:'Interiezione', 'Proper noun':'Nome proprio', Numeral:'Numerale', Article:'Articolo', Determiner:'Determinante', Particle:'Particella', Phrase:'Frase',
@@ -919,7 +926,7 @@ function home(){
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
   const hr = new Date().getHours(), hi = t('hello')[hr < 5 ? 0 : hr < 13 ? 1 : hr < 18 ? 2 : 3];
   out.innerHTML = '<h1 class="hello">' + hi + ' ' + (hr >= 5 && hr < 18 ? '☀️' : '🌙') + '</h1><p class="hint">' + t('hint') + (S.langs.includes('ja') || S.langs.includes('si') ? '<br><span class="small">' + t('latinHint') + '</span>' : '') + '</p>' +
-    '<section class="card wotd" id="wotd" hidden></section>' +
+    '<section class="card wotd" id="wotd"><h2>✨ ' + t('wotd') + '</h2><p class="muted"><span class="spin"></span>' + t('loading') + '</p></section>' +
     '<button class="act surprise" data-surprise>' + t('surprise') + '</button>' +
     (S.saved.length ? '<section class="shelf"><h2>★ ' + t('favs') + '</h2><div class="chips">' + wordChips(S.saved.slice(0, 8)) + '</div>' + (S.saved.length > 8 ? '<button class="morebtn" data-nav="favs">' + t('seeAll') + ' (' + S.saved.length + ')</button>' : '') + '</section>' : '') +
     (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent.slice(0, 8)) + '</div></section>' : '');
@@ -1144,7 +1151,7 @@ async function listen(b){
 function renderSettings(){
   const d = $('#set');
   d.innerHTML = '<h2>' + t('settings') + '</h2><h3>' + t('myLangs') + '</h3><div class="lgrid">' +
-    Core.LANGS.map(L => '<label><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
+    Core.LANGS.map(L => '<label' + (L.c === S.ui ? ' class="locked"' : '') + '><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + (L.c === S.ui ? ' disabled' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
     '</div>' + varBlocks(S.langs, 'data-var') + '<h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
     '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button>' + extras() +
     '<section class="xcard priv"><h2>' + t('privT') + '</h2><p>' + t('privD') + ' <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">' + t('privL') + '</a></p></section>' +
@@ -1157,16 +1164,14 @@ function openSettings(){
 $('#set').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.var){ S.vars[b.dataset.var] = b.dataset.val; store.set('vars', S.vars); renderSettings(); }
-  else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); applyPrefs(); renderSettings(); }
+  else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); syncLangs(); applyPrefs(); renderSettings(); }
   else if('close' in b.dataset){ $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); }
   else if('rewelcome' in b.dataset){ skipReload = true; $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); welcome(); }
 });
 $('#set').addEventListener('change', e => {
   const c = e.target.dataset.lang; if(!c) return;
-  const on = new Set(S.langs); e.target.checked ? on.add(c) : on.delete(c);
-  S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x));
-  if(!S.langs.length) S.langs = ['en'];
-  store.set('langs', S.langs);
+  const on = new Set(S.picked); e.target.checked ? on.add(c) : on.delete(c);
+  setPicked([...on]);
   const y = $('#set').scrollTop; renderSettings(); $('#set').scrollTop = y;
 });
 let skipReload = false;
@@ -1253,7 +1258,7 @@ window.addEventListener('hashchange', () => {
 const WSTART = {};
 const WELCOME_LANGS = ['it','en','es','zh','ja','fr','si','ca','de','pt','ru','ar','hi','ko'];
 function welcome(keep){
-  if(!keep && !store.get('welcomed', false) && !WSTART.done){ WSTART.done = true; S.langs = []; }
+  if(!keep && !store.get('welcomed', false) && !WSTART.done){ WSTART.done = true; setPicked([]); }
   R = null; token++; view = 'welcome';
   document.body.classList.add('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -1264,12 +1269,12 @@ function welcome(keep){
     '<h1>' + t('wTitle') + '</h1><p class="wsub">' + t('wSub') + '</p>' +
     '<ol class="wsteps">' + step(1, 'c-mean', t('w1')) + step(2, 'c-syn', t('w2')) + step(3, 'c-ant', t('w3')) + '</ol>' +
     '<h2>' + t('wLangs') + '</h2><div class="chips wlangs">' +
-    WELCOME_LANGS.map(c => '<button class="chip plain wl' + (S.langs.includes(c) ? ' on' : '') + '" data-wl="' + c + '" aria-pressed="' + S.langs.includes(c) + '"><span lang="' + c + '">' + esc(Core.BY_C[c].n) + '</span>' +
+    WELCOME_LANGS.map(c => '<button class="chip plain wl' + (S.langs.includes(c) ? ' on' : '') + (c === S.ui ? ' locked' : '') + '" data-wl="' + c + '" aria-pressed="' + S.langs.includes(c) + '"' + (c === S.ui ? ' disabled title="' + t('appLang') + '"' : '') + '><span lang="' + c + '">' + esc(Core.BY_C[c].n) + '</span>' +
       (Core.BY_C[c].n !== langName(c) ? '<span class="cq">' + esc(langName(c)) + '</span>' : '') + '</button>').join('') + '</div>' +
     '<div class="wvars">' + varBlocks(S.langs, 'data-wvar') + '</div>' +
     '<p class="muted small">' + t('wLater') + '</p>' +
-    '<p class="wcount">' + (S.langs.length ? t('nChosen') + ' <b>' + S.langs.map(c => esc(langName(c))).join(', ') + '</b>' : t('pickOne')) + '</p>' +
-    '<button class="done big" data-start' + (S.langs.length ? '' : ' disabled') + '>' + t('start') + ' →</button>' +
+    '<p class="wcount">' + t('nChosen') + ' <b>' + S.langs.map(c => esc(langName(c)) + (c === S.ui ? ' (' + t('appLang') + ')' : '')).join(', ') + '</b><br><span class="muted small">' + t('appLangNote') + '</span></p>' +
+    '<button class="done big" data-start>' + t('start') + ' →</button>' +
     '<p class="muted small center">' + t('noAI') + '</p></section>';
   if(!keep) window.scrollTo(0, 0);
 }
@@ -1313,13 +1318,14 @@ document.addEventListener('click', e => {
   if(d.nav === 'home'){ lastRemoved = null; home(); }
   else if(d.nav === 'favs'){ favs(); }
   else if(d.wl){
-    const on = new Set(S.langs); on.has(d.wl) ? on.delete(d.wl) : on.add(d.wl);
-    S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x)); store.set('langs', S.langs);
+    if(d.wl === S.ui) return;
+    const on = new Set(S.picked); on.has(d.wl) ? on.delete(d.wl) : on.add(d.wl);
+    setPicked([...on]);
     const y = window.scrollY; welcome(true); window.scrollTo(0, y);
   }
   else if(d.wvar){ S.vars[d.wvar] = d.val; store.set('vars', S.vars); b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
-  else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); applyPrefs(); welcome(true); }
-  else if('start' in d){ if(!S.langs.length) return; store.set('langs', S.langs); store.set('welcomed', true); home(); input.focus(); }
+  else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); syncLangs(); applyPrefs(); welcome(true); }
+  else if('start' in d){ store.set('langs', S.picked); store.set('welcomed', true); home(); input.focus(); }
   else if(d.ff){ favFilter = d.ff; lastRemoved = null; favs(); }
   else if(d.unfav !== undefined){
     const i = S.saved.findIndex(x => x.w === d.unfav && (x.l || '') === d.ul);
@@ -1386,10 +1392,16 @@ async function loadWotd(){
   let W = store.get('wotd3', null);
   if(!W || W.d !== day || !S.langs.includes(W.l) || W.ui !== S.ui){
     const rnd = seeded(day + S.langs.join());
-    const l = S.langs[Math.floor(rnd() * S.langs.length)];
-    let res = null;
-    try{ res = await Core.randomWord(l, rnd); }catch(e){}
-    if(!res) return;
+    const first = S.langs[Math.floor(rnd() * S.langs.length)];
+    const order = [first].concat(S.langs.filter(c => c !== first).sort(() => Math.random() - 0.5));
+    let res = null, l = first;
+    for(let i = 0; i < order.length && !res; i++){
+      l = order[i];
+      try{ res = await Core.randomWord(l, i === 0 ? rnd : Math.random); }catch(e){}
+      if(!res && i === 0){ try{ res = await Core.randomWord(l, Math.random); }catch(e){} }
+    }
+    const b0 = $('#wotd');
+    if(!res){ if(b0 && my === token) b0.hidden = true; return; }
     let g = gloss(res.E);
     if(S.ui === 'it'){ const im = await Core.itMeanings([res.w], l).catch(() => null); if(im) g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
     W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g, ui: S.ui};
@@ -1454,7 +1466,7 @@ document.addEventListener('click', e => {
   if(!b) return;
   const d = b.dataset;
   if('surprise' in d) surprise(b);
-  else if(d.enable){ if(!S.langs.includes(d.enable)){ S.langs = Core.LANGS.map(L => L.c).filter(c => c === d.enable || S.langs.includes(c)); store.set('langs', S.langs); } search(d.ew, d.enable); }
+  else if(d.enable){ if(!S.langs.includes(d.enable)) setPicked(S.picked.concat(d.enable)); search(d.ew, d.enable); }
   else if('review' in d) startReview();
   else if('rreveal' in d){ RV.open = true; drawReview(); }
   else if('rknew' in d){ if(!RV.q[RV.i].again) RV.known++; RV.i++; RV.open = false; drawReview(); }
