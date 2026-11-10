@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F5EFE6">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="description" content="A fast, calm, multilingual dictionary. Data from Wiktionary. No AI.">
+<meta name="description" content="A calm, fast multilingual dictionary. Data from Wiktionary. No AI.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
@@ -108,11 +108,49 @@ dialog h2{margin:0 0 6px}dialog h3{margin:18px 0 8px;font-size:.9rem;text-transf
 .done{margin-top:22px;width:100%;padding:13px;border-radius:12px;background:var(--pfill);color:var(--ink);font-weight:700}
 @media (max-width:520px){.word h1{font-size:2.2rem}.trow{flex-direction:column;gap:2px}.tl{width:auto;padding:0}#go{padding:0 14px}}
 #q:focus{border-color:var(--pri);outline:none}
+
+/* welcome */
+body.welcoming #form,body.welcoming #bfav,body.welcoming #bset{visibility:hidden}
+body.welcoming .top{border-bottom-color:transparent}
+.welcome{max-width:560px;margin:0 auto;padding-bottom:10px}
+.welcome .wui{max-width:240px;margin:0 0 0 auto}
+.wlogo{text-align:center;margin-top:8px}
+.welcome h1{text-align:center;font-size:2rem;line-height:1.25;margin:6px 0 4px}
+.wsub{text-align:center;color:var(--muted);font-size:1.15rem;margin:0 0 22px}
+.wsteps{list-style:none;padding:0;margin:0 0 26px;display:flex;flex-direction:column;gap:12px}
+.wsteps li{display:flex;gap:14px;align-items:flex-start;background:var(--card);border-radius:16px;padding:14px 16px;font-size:1.08rem;box-shadow:0 2px 10px rgba(160,110,70,.08)}
+.wn{flex:none;width:2em;height:2em;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:var(--card)}
+.c-mean{background:var(--mean)}.c-syn{background:var(--syn)}.c-ant{background:var(--ant)}
+.welcome h2{font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:20px 0 10px}
+.chip.wl{font-weight:700}
+.chip.wl.on{background:var(--pfill);border-color:var(--pfill)}
+.chip.wl.on::before{content:'✓';color:var(--pri)}
+.small{font-size:.92rem}.center{text-align:center}
+.done.big{font-size:1.15rem;padding:15px;margin-top:14px}
+.linkbtn{display:inline-block;margin-top:14px;padding:8px 2px;color:var(--pri);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+/* favourites */
+.fhead{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
+.fhead h1{font-size:2rem;margin:0}
+.count{background:var(--pfill);border-radius:999px;padding:2px 12px;font-weight:700}
+.ffilt{margin-bottom:12px}.ffilt small{font-weight:400;opacity:.8}
+.favlist{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:10px}
+.fav{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:16px;padding:6px 8px 6px 4px;box-shadow:0 2px 10px rgba(160,110,70,.08)}
+.fopen{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:8px 12px;border-radius:12px}
+.fopen:hover{background:var(--soft)}
+.fw{font-size:1.4rem;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.ftr{color:var(--tr);font-size:1rem}
+.fg{color:var(--muted);font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.flang{flex:none;font-size:.8rem;font-weight:700;color:var(--muted);background:var(--soft);border-radius:8px;padding:2px 8px}
+.fx{flex:none;width:44px;height:44px;border-radius:12px;color:var(--muted);font-size:1.1rem}
+.fx:hover{background:var(--soft);color:var(--ant)}
+.toast{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--pfill);border-radius:14px;padding:10px 16px;margin-bottom:12px;font-weight:700}
+.toast button{color:var(--pri);text-decoration:underline;text-underline-offset:4px;font-weight:700}
 </style>
 </head>
 <body>
 <div class="top"><div class="wrap">
   <div class="bar"><a href="#" id="brand">Kotoba</a>
+    <button class="ib" id="bfav" aria-label="Favourites">★</button>
     <button class="ib" id="bsize" aria-label="Text size">Aa</button>
     <button class="ib" id="btheme" aria-label="Theme">◐</button>
     <button class="ib" id="bset" aria-label="Settings">⚙</button></div>
@@ -424,7 +462,13 @@ const TXT = {
     wikt:'Apri la voce completa su Wiktionary (coniugazioni, etimologia…)', settings:'Impostazioni', myLangs:'Le mie lingue', esVar:'Quale spagnolo?',
     both:'Entrambi', ES:'Spagna', LA:'America Latina', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba'},
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba',
+    favs:'Le mie parole', favsBtn:'Parole preferite', favsEmpty:'Non hai ancora parole preferite. Quando trovi una parola che ti piace, tocca ☆ Salva e la ritrovi qui.',
+    allL:'Tutte', removed:'Tolta dalle preferite.', undo:'Annulla', copyList:'Copia la lista', remove:'Togli', seeAll:'Vedi tutte', back:'← Indietro',
+    wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
+    w1:'Scrivi una parola in una delle tue lingue.', w2:'Trovi significato, esempi, sinonimi, contrari e traduzioni, con la scrittura originale e la pronuncia.',
+    w3:'Tocca una parola colorata per cercarla. Salva con ☆ quelle che ti piacciono.',
+    wLangs:'Quali lingue usi?', wLater:'Puoi cambiarle quando vuoi da ⚙.', start:'Inizia', reWelcome:'Rivedi il benvenuto', noAI:'Niente AI, niente account: i dati vengono da Wiktionary e le tue parole restano sul tuo dispositivo.'},
   en: {ph:'Type a word…', go:'Search', recent:'Recent', saved:'Saved', meaning:'Meaning', syn:'Synonyms', ant:'Opposites',
     nyms:'Synonyms & opposites', trans:'Translations', rel:'Related words', help:'Helpers', all:'All', listen:'Listen', save:'Save', unsave:'Saved',
     copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
@@ -433,7 +477,13 @@ const TXT = {
     wikt:'Open the full entry on Wiktionary (conjugations, etymology…)', settings:'Settings', myLangs:'My languages', esVar:'Which Spanish?',
     both:'Both', ES:'Spain', LA:'Latin America', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba'}
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba',
+    favs:'My words', favsBtn:'Favourite words', favsEmpty:'No favourite words yet. When you find a word you like, tap ☆ Save and it will be here.',
+    allL:'All', removed:'Removed from favourites.', undo:'Undo', copyList:'Copy the list', remove:'Remove', seeAll:'See all', back:'← Back',
+    wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
+    w1:'Type a word in any of your languages.', w2:'You get meanings, examples, synonyms, opposites and translations, in the original script with pronunciation.',
+    w3:'Tap a coloured word to look it up. Save the ones you like with ☆.',
+    wLangs:'Which languages do you use?', wLater:'You can change them any time from ⚙.', start:'Start', reWelcome:'See the welcome again', noAI:'No AI, no account: the data comes from Wiktionary and your words stay on your device.'}
 };
 const POS_IT = {Noun:'Sostantivo', Verb:'Verbo', Adjective:'Aggettivo', Adverb:'Avverbio', Pronoun:'Pronome', Preposition:'Preposizione', Conjunction:'Congiunzione',
   Interjection:'Interiezione', 'Proper noun':'Nome proprio', Numeral:'Numerale', Article:'Articolo', Determiner:'Determinante', Particle:'Particella', Phrase:'Frase',
@@ -442,7 +492,7 @@ const t = k => TXT[S.ui][k];
 const posName = n => { n = n.replace(/ \d+$/, ''); return S.ui === 'it' ? (POS_IT[n] || n) : n; };
 const langName = c => { const L = Core.BY_C[c]; return S.ui === 'it' ? L.it : L.wk; };
 const out = $('#out'), input = $('#q'), sug = $('#sug');
-let R = null, token = 0, focus = 'all';
+let R = null, token = 0, focus = 'all', view = 'home', favFilter = 'all', lastRemoved = null;
 
 function applyPrefs(){
   document.documentElement.dataset.theme = S.theme;
@@ -450,7 +500,7 @@ function applyPrefs(){
   document.documentElement.lang = S.ui;
   input.placeholder = t('ph'); $('#go').textContent = t('go'); $('#src').textContent = t('src');
   $('#brand').textContent = t('title'); document.title = t('title');
-  $('#bsize').title = t('size'); $('#btheme').title = t('theme'); $('#bset').title = t('settings');
+  $('#bsize').title = t('size'); $('#bfav').title = t('favsBtn'); $('#bfav').setAttribute('aria-label', t('favsBtn')); $('#btheme').title = t('theme'); $('#bset').title = t('settings');
 }
 function regionBadge(r){ return r ? '<span class="rg rg-' + r + '">' + (r === 'ES' ? 'ES' : 'LATAM') + '</span>' : ''; }
 function chip(x, lc, kind){
@@ -478,10 +528,10 @@ function scriptOf(w, avail){
   return null;
 }
 function home(){
-  R = null; token++; input.value = '';
+  R = null; token++; input.value = ''; view = 'home'; document.body.classList.remove('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
   out.innerHTML = '<p class="hint">' + t('hint') + '</p>' +
-    (S.saved.length ? '<section class="shelf"><h2>★ ' + t('saved') + '</h2><div class="chips">' + wordChips(S.saved) + '</div></section>' : '') +
+    (S.saved.length ? '<section class="shelf"><h2>★ ' + t('favs') + '</h2><div class="chips">' + wordChips(S.saved.slice(0, 8)) + '</div>' + (S.saved.length > 8 ? '<button class="morebtn" data-nav="favs">' + t('seeAll') + ' (' + S.saved.length + ')</button>' : '') + '</section>' : '') +
     (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent) + '</div></section>' : '');
 }
 function message(html){ out.innerHTML = '<div class="msg">' + html + '</div>'; }
@@ -504,7 +554,7 @@ async function search(w, hint){
     return message(t('noLang') + (names.length ? '<p>' + t('also') + ' ' + esc(names.join(', ')) + '</p>' : ''));
   }
   const cur = hint && avail.includes(hint) ? hint : scriptOf(r.title, avail) || (avail.includes(S.last) ? S.last : avail[0]);
-  R = {r, avail, cur, pivot: null};
+  R = {r, avail, cur, pivot: null}; view = 'word';
   focus = 'all';
   if(decodeURIComponent(location.hash.slice(1)) !== r.title) location.hash = encodeURIComponent(r.title);
   show();
@@ -636,7 +686,7 @@ function openSettings(){
     Core.LANGS.map(L => '<label><input type="checkbox" data-lang="' + L.c + '"' + (S.langs.includes(L.c) ? ' checked' : '') + '> <span lang="' + L.c + '">' + esc(L.n) + '</span> <small>' + esc(langName(L.c)) + '</small></label>').join('') +
     '</div><h3>' + t('esVar') + '</h3><div class="seg">' + ['both','ES','LA'].map(v => '<button data-es="' + v + '" class="' + (S.es === v ? 'on' : '') + '">' + t(v) + '</button>').join('') +
     '</div><h3>' + t('uiLang') + '</h3><div class="seg">' + ['it','en'].map(v => '<button data-ui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') +
-    '</div><button class="done" data-close>' + t('close') + '</button>';
+    '</div><button class="linkbtn" data-rewelcome>' + t('reWelcome') + '</button><button class="done" data-close>' + t('close') + '</button>';
   if(d.showModal) d.showModal(); else d.setAttribute('open', '');
 }
 $('#set').addEventListener('click', e => {
@@ -644,6 +694,7 @@ $('#set').addEventListener('click', e => {
   if(b.dataset.es){ S.es = b.dataset.es; store.set('es', S.es); openSettingsRefresh(); }
   else if(b.dataset.ui){ S.ui = b.dataset.ui; store.set('ui', S.ui); applyPrefs(); openSettingsRefresh(); }
   else if('close' in b.dataset){ $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); }
+  else if('rewelcome' in b.dataset){ skipReload = true; $('#set').close ? $('#set').close() : $('#set').removeAttribute('open'); welcome(); }
 });
 function openSettingsRefresh(){ const d = $('#set'); if(d.close && d.open) d.close(); openSettings(); }
 $('#set').addEventListener('change', e => {
@@ -653,7 +704,11 @@ $('#set').addEventListener('change', e => {
   if(!S.langs.length) S.langs = ['en'];
   store.set('langs', S.langs);
 });
-$('#set').addEventListener('close', () => { if(R) search(R.r.title, R.cur); else home(); });
+let skipReload = false;
+$('#set').addEventListener('close', () => {
+  if(skipReload){ skipReload = false; return; }
+  if(R) search(R.r.title, R.cur); else if(view === 'favs') favs(); else home();
+});
 
 /* events */
 document.addEventListener('click', e => {
@@ -668,7 +723,9 @@ document.addEventListener('click', e => {
   else if(d.act === 'listen') listen();
   else if(d.act === 'save'){
     const w = R.r.title, l = R.cur;
-    S.saved = isSaved() ? S.saved.filter(x => !(x.w === w && x.l === l)) : [{w, l}].concat(S.saved);
+    const E = R.r.entries[l], s0 = E.pos[0] && E.pos[0].senses[0];
+    const g = s0 ? s0.html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim().slice(0, 90) : '';
+    S.saved = isSaved() ? S.saved.filter(x => !(x.w === w && x.l === l)) : [{w, l, s: E.typed || E.word, tr: E.tr || '', g, at: Date.now()}].concat(S.saved);
     store.set('saved', S.saved);
     b.classList.toggle('on', isSaved()); b.textContent = isSaved() ? '★ ' + t('unsave') : '☆ ' + t('save');
   }
@@ -692,18 +749,106 @@ input.addEventListener('input', () => {
 });
 sug.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if(b){ e.stopPropagation(); search(b.dataset.w); } });
 input.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 180));
-$('#brand').addEventListener('click', e => { e.preventDefault(); home(); input.focus(); });
+$('#brand').addEventListener('click', e => { e.preventDefault(); if(document.body.classList.contains('welcoming')) return; home(); input.focus(); });
+$('#bfav').addEventListener('click', () => { if(!document.body.classList.contains('welcoming')) favs(); });
 $('#bsize').addEventListener('click', () => { S.size = (S.size + 1) % 3; store.set('size', S.size); applyPrefs(); });
 $('#btheme').addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; store.set('theme', S.theme); applyPrefs(); });
 $('#bset').addEventListener('click', openSettings);
 document.addEventListener('keydown', e => { if(e.key === '/' && document.activeElement !== input && !$('#set').open){ e.preventDefault(); input.focus(); input.select(); } });
 window.addEventListener('hashchange', () => {
   const w = decodeURIComponent(location.hash.slice(1));
-  if(!w) return home();
+  if(document.body.classList.contains('welcoming')) return;
+  if(!w){ if(view === 'word') home(); return; }
   if(!R || R.r.title !== w) search(w);
 });
+/* ===== Welcome ===== */
+const WELCOME_LANGS = ['it','en','es','zh','ja','fr','si','ca','de','pt','ru','ar','hi','ko'];
+function welcome(){
+  R = null; token++; view = 'welcome';
+  document.body.classList.add('welcoming');
+  if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+  const step = (n, cls, txt) => '<li><span class="wn ' + cls + '">' + n + '</span><span>' + txt + '</span></li>';
+  out.innerHTML = '<section class="welcome">' +
+    '<div class="seg wui">' + ['it','en'].map(v => '<button data-wui="' + v + '" class="' + (S.ui === v ? 'on' : '') + '">' + (v === 'it' ? 'Italiano' : 'English') + '</button>').join('') + '</div>' +
+    '<div class="wlogo" aria-hidden="true">' + LOGO + '</div>' +
+    '<h1>' + t('wTitle') + '</h1><p class="wsub">' + t('wSub') + '</p>' +
+    '<ol class="wsteps">' + step(1, 'c-mean', t('w1')) + step(2, 'c-syn', t('w2')) + step(3, 'c-ant', t('w3')) + '</ol>' +
+    '<h2>' + t('wLangs') + '</h2><div class="chips wlangs">' +
+    WELCOME_LANGS.map(c => '<button class="chip plain wl' + (S.langs.includes(c) ? ' on' : '') + '" data-wl="' + c + '" aria-pressed="' + S.langs.includes(c) + '"><span lang="' + c + '">' + esc(Core.BY_C[c].n) + '</span>' +
+      (Core.BY_C[c].n !== langName(c) ? '<span class="cq">' + esc(langName(c)) + '</span>' : '') + '</button>').join('') + '</div>' +
+    '<div class="wes"><h2>' + t('esVar') + '</h2><div class="seg">' + ['both','ES','LA'].map(v => '<button data-wes="' + v + '" class="' + (S.es === v ? 'on' : '') + '">' + t(v) + '</button>').join('') + '</div></div>' +
+    '<p class="muted small">' + t('wLater') + '</p>' +
+    '<button class="done big" data-start>' + t('start') + ' →</button>' +
+    '<p class="muted small center">' + t('noAI') + '</p></section>';
+  window.scrollTo(0, 0);
+}
+const LOGO = '<svg viewBox="0 0 120 120" width="88" height="88"><rect x="24" y="28" width="72" height="51" rx="13" fill="var(--pfill)"/><path d="M43 77 L39 96 L60 78 Z" fill="var(--pfill)"/>' +
+  '<rect x="35" y="40" width="48" height="6" rx="3" fill="var(--mean)"/><rect x="35" y="51" width="36" height="6" rx="3" fill="var(--syn)"/><rect x="35" y="62" width="43" height="6" rx="3" fill="var(--ant)"/></svg>';
+
+/* ===== Favourite words ===== */
+function favs(){
+  R = null; token++; view = 'favs'; input.value = '';
+  document.body.classList.remove('welcoming');
+  if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+  const langs = [...new Set(S.saved.map(x => x.l))].filter(c => Core.BY_C[c]);
+  if(favFilter !== 'all' && !langs.includes(favFilter)) favFilter = 'all';
+  const list = S.saved.filter(x => favFilter === 'all' || x.l === favFilter);
+  let h = '<button class="linkbtn" data-nav="home">' + t('back') + '</button>' +
+    '<header class="fhead"><h1>★ ' + t('favs') + '</h1><span class="count">' + S.saved.length + '</span></header>';
+  if(lastRemoved) h += '<div class="toast">' + t('removed') + ' <button data-undo>' + t('undo') + '</button></div>';
+  if(!S.saved.length){ out.innerHTML = h + '<div class="msg">' + t('favsEmpty') + '</div>'; return; }
+  if(langs.length > 1) h += '<nav class="tabs ffilt">' + ['all'].concat(langs).map(c =>
+    '<button class="tab' + (favFilter === c ? ' on' : '') + '" data-ff="' + c + '">' + (c === 'all' ? t('allL') : esc(Core.BY_C[c].n)) +
+    ' <small>' + (c === 'all' ? S.saved.length : S.saved.filter(x => x.l === c).length) + '</small></button>').join('') + '</nav>';
+  h += '<ul class="favlist">' + list.map(x => {
+    const L = Core.BY_C[x.l];
+    return '<li class="fav"><button class="fopen" data-w="' + esc(x.w) + '" data-l="' + esc(x.l || '') + '">' +
+      '<span class="fw" lang="' + esc(x.l || '') + '">' + esc(x.s || x.w) + '</span>' +
+      (x.tr ? '<span class="ftr">' + esc(x.tr) + '</span>' : '') +
+      (x.g ? '<span class="fg">' + esc(x.g) + '</span>' : '') +
+      '</button><span class="flang">' + (L ? esc(L.n) : '') + '</span>' +
+      '<button class="fx" data-unfav="' + esc(x.w) + '" data-ul="' + esc(x.l || '') + '" aria-label="' + t('remove') + '" title="' + t('remove') + '">✕</button></li>';
+  }).join('') + '</ul>';
+  h += '<button class="act" data-copyfavs>⧉ ' + t('copyList') + '</button>';
+  out.innerHTML = h;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-nav],[data-wl],[data-wes],[data-wui],[data-start],[data-ff],[data-unfav],[data-undo],[data-copyfavs]');
+  if(!b || b.closest('#set')) return;
+  const d = b.dataset;
+  if(d.nav === 'home'){ lastRemoved = null; home(); }
+  else if(d.nav === 'favs'){ favs(); }
+  else if(d.wl){
+    const on = new Set(S.langs); on.has(d.wl) ? on.delete(d.wl) : on.add(d.wl);
+    if(!on.size) return;
+    S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x)); store.set('langs', S.langs);
+    b.classList.toggle('on', on.has(d.wl)); b.setAttribute('aria-pressed', on.has(d.wl));
+  }
+  else if(d.wes){ S.es = d.wes; store.set('es', S.es); b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
+  else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); applyPrefs(); welcome(); }
+  else if('start' in d){ store.set('welcomed', true); home(); input.focus(); }
+  else if(d.ff){ favFilter = d.ff; lastRemoved = null; favs(); }
+  else if(d.unfav !== undefined){
+    const i = S.saved.findIndex(x => x.w === d.unfav && (x.l || '') === d.ul);
+    if(i < 0) return;
+    lastRemoved = {item: S.saved[i], i};
+    S.saved.splice(i, 1); store.set('saved', S.saved); favs();
+  }
+  else if('undo' in d){
+    if(lastRemoved){ S.saved.splice(lastRemoved.i, 0, lastRemoved.item); store.set('saved', S.saved); }
+    lastRemoved = null; favs();
+  }
+  else if('copyfavs' in d){
+    const list = S.saved.filter(x => favFilter === 'all' || x.l === favFilter);
+    const txt = list.map(x => (x.s || x.w) + (x.tr ? ' (' + x.tr + ')' : '') + (x.g ? ' — ' + x.g : '')).join('\n');
+    try{ navigator.clipboard.writeText(txt).then(() => { b.textContent = '✓ ' + t('copied'); setTimeout(() => { b.textContent = '⧉ ' + t('copyList'); }, 1400); }, () => {}); }catch(err){}
+  }
+});
+
 applyPrefs();
-if(location.hash.length > 1) search(decodeURIComponent(location.hash.slice(1))); else home();
+if(!store.get('welcomed', false)) welcome();
+else if(location.hash.length > 1) search(decodeURIComponent(location.hash.slice(1)));
+else home();
 
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 

@@ -3,11 +3,14 @@
 A calm, fast multilingual dictionary for writers and language learners.
 *Kotoba* (言葉) means "word" in Japanese.
 
+**Open the app → [sandras-apps.github.io/kotoba-app](https://sandras-apps.github.io/kotoba-app/)**
+
 - **Meanings, examples, synonyms and opposites** for a word, in its own language
 - **Translations** into all your languages on one screen
 - **Native script and phonetics**: pinyin for Chinese, furigana and romaji for Japanese, transliteration for Sinhala, IPA for the others
 - **Spanish from Spain vs Latin America**: regional words and pronunciations are labelled (ES / LATAM)
 - **Easy on the eyes**: one column, soft colours, large adjustable text, light and dark theme, one section at a time if you want
+- **Favourite words**: save the words you like and find them in one list, filtered by language
 - **No AI, no account, no tracking.** Saved words and settings stay in your browser.
 
 ## Languages
@@ -23,6 +26,14 @@ What you see depends on what Wiktionary has: some languages (for example Sinhala
 ## Run it
 
 Open `index.html` in a browser, or host the folder on GitHub Pages. It can be installed on a phone as a web app.
+
+## Editing
+
+The source lives in `src/` (`core.js` reads Wiktionary, `ui.js` is the interface, `style.css` the look). After a change, rebuild the page with:
+
+```
+node src/build.js
+```
 
 ## Credits
 
