@@ -197,3 +197,5 @@ body.welcoming .top{border-bottom-color:transparent}
 .sw .ftr{font-weight:400;font-size:.95rem;margin-left:6px}
 .wvars h3{font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
 #set .seg{flex-wrap:wrap}
+.act.busy{opacity:.6}
+#toastbar{line-height:1.45}

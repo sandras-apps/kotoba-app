@@ -212,6 +212,8 @@ body.welcoming .top{border-bottom-color:transparent}
 .sw .ftr{font-weight:400;font-size:.95rem;margin-left:6px}
 .wvars h3{font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
 #set .seg{flex-wrap:wrap}
+.act.busy{opacity:.6}
+#toastbar{line-height:1.45}
 </style>
 </head>
 <body>
@@ -702,7 +704,7 @@ const TXT = {
     size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
     sizeT:'Dimensione del testo', sizes:['Piccolo','Normale','Grande','Molto grande'],
     hello:['Buona notte','Buongiorno','Buon pomeriggio','Buonasera'], wotd:'Parola del giorno', surprise:'🎲 Parola a sorpresa', open:'Apri',
-    didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
+    didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', noVoiceSi:'Per il singalese non esistono ancora registrazioni libere, e questo computer non ha una voce singalese. Sul telefono Android di solito funziona: nelle impostazioni della sintesi vocale di Google puoi scaricare la voce singalese.', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
     review:'Ripassa', reviewT:'Ripasso', reveal:'Mostra il significato', knew:'✓ Lo sapevo', again:'↻ Ancora', of:'di',
     doneT:'Fatto!', doneMsg:'Hai ripassato {n}. Al primo colpo: {k}.', word1:'1 parola', wordN:'{n} parole', reviewMore:'Ripassa ancora', toList:'Torna alle parole', noGloss:'Apri la parola per vedere il significato.',
     note:'Nota', addNote:'✎ Aggiungi una nota', editNote:'✎ Modifica nota', notePh:'Una frase tua, un ricordo, un esempio per il romanzo…', saveNote:'Salva nota', yourNote:'La tua nota', formNote:'<b>variante</b> = non è la parola base, ma un plurale, un femminile o un verbo coniugato di un\u2019altra parola.',
@@ -724,7 +726,7 @@ const TXT = {
     size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
     sizeT:'Text size', sizes:['Small','Normal','Large','Extra large'],
     hello:['Good night','Good morning','Good afternoon','Good evening'], wotd:'Word of the day', surprise:'🎲 Surprise word', open:'Open',
-    didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
+    didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', noVoiceSi:'There are no free Sinhala recordings yet, and this computer has no Sinhala voice. On Android phones it usually works: in Google text-to-speech settings you can download the Sinhala voice.', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
     review:'Review', reviewT:'Review', reveal:'Show the meaning', knew:'✓ I knew it', again:'↻ Again', of:'of',
     doneT:'Done!', doneMsg:'You reviewed {n}. Right the first time: {k}.', word1:'1 word', wordN:'{n} words', reviewMore:'Review again', toList:'Back to my words', noGloss:'Open the word to see its meaning.',
     note:'Note', addNote:'✎ Add a note', editNote:'✎ Edit note', notePh:'Your own sentence, a memory, an example for your novel…', saveNote:'Save note', yourNote:'Your note', formNote:'<b>variant</b> = not the base word, but a plural, feminine or conjugated verb of another word.',
@@ -967,16 +969,30 @@ async function speak(){
     voices = speechSynthesis.getVoices();
   }
   const has = voices.some(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
-  if(!has){ toast(t('noVoice')); return; }
+  if(!has){ toast(t(R.cur === 'si' ? 'noVoiceSi' : 'noVoice')); return; }
   const E = R.r.entries[R.cur], u = new SpeechSynthesisUtterance(E.typed || E.word);
   u.lang = lang; u.voice = voices.find(v => v.lang.replace('_', '-') === lang) || voices.find(v => v.lang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase())); u.rate = 0.85;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 }
-function listen(){
+/* Lingua Libre: volunteers' recordings on Wikimedia Commons, used when Wiktionary has none */
+const LLQ = {it: 'Q652', en: 'Q1860', es: 'Q1321', zh: 'Q9192', ja: 'Q5287', fr: 'Q150', si: 'Q13267', ca: 'Q7026', de: 'Q188', pt: 'Q5146', ru: 'Q7737', ar: 'Q13955', hi: 'Q1568', ko: 'Q9176'};
+async function linguaLibre(word, lc){
+  const C = 'https://commons.wikimedia.org/w/api.php?format=json&formatversion=2&origin=*&action=query';
+  try{
+    const r = await (await fetch(C + '&list=search&srnamespace=6&srlimit=10&srsearch=' + encodeURIComponent('intitle:"LL-' + LLQ[lc] + '" intitle:"' + word + '"'))).json();
+    const f = ((r.query || {}).search || []).map(x => x.title).find(ti => ti.endsWith('-' + word + '.wav') || ti.endsWith('-' + word + '.ogg'));
+    if(!f) return null;
+    const i = await (await fetch(C + '&prop=imageinfo&iiprop=url&titles=' + encodeURIComponent(f))).json();
+    return ((i.query.pages[0].imageinfo || [])[0] || {}).url || null;
+  }catch(e){ return null; }
+}
+async function listen(b){
   const E = R.r.entries[R.cur]; let a = E.audio;
   if(regional(R.cur)){ const m = a.filter(x => x.r === pref(R.cur)); a = m.length ? m : a.filter(x => !off(x.r, R.cur)); }
-  if(!a.length) return speak();
-  try{ new Audio(a[0].src).play().catch(speak); }catch(e){ speak(); }
+  let src = a.length ? a[0].src : null;
+  if(!src && LLQ[R.cur]){ if(b) b.classList.add('busy'); src = await linguaLibre(E.typed || E.word, R.cur); if(b) b.classList.remove('busy'); }
+  if(!src) return speak();
+  try{ new Audio(src).play().catch(speak); }catch(e){ speak(); }
 }
 
 /* settings */
@@ -1022,7 +1038,7 @@ document.addEventListener('click', e => {
   else if(d.focus){ focus = d.focus; out.dataset.focus = focus; out.querySelectorAll('.focus button').forEach(x => x.classList.toggle('on', x === b)); }
   else if(d.pivot){ R.pivot = d.pivot; $('#trbox').innerHTML = '<span class="spin"></span>'; loadTrans(); }
   else if('more' in d){ b.parentElement.querySelectorAll('.extra').forEach(x => x.classList.remove('extra')); b.remove(); }
-  else if(d.act === 'listen') listen();
+  else if(d.act === 'listen') listen(b);
   else if(d.act === 'save'){
     const w = R.r.title, l = R.cur;
     const E = R.r.entries[l], s0 = E.pos[0] && E.pos[0].senses[0];
