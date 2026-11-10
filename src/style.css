@@ -217,3 +217,14 @@ body.welcoming .top{border-bottom-color:transparent}
 .done:disabled{opacity:.45;cursor:default}
 .chip.wl{border-width:2px}
 .chip.wl.on{border-color:var(--pri)}
+
+/* install, share, more apps */
+.extras{margin-top:34px;display:flex;flex-direction:column;gap:14px}
+.xcard{background:var(--card);border-radius:20px;padding:20px 20px 22px;box-shadow:0 2px 10px rgba(160,110,70,.08)}
+.xcard h2{margin:0 0 6px;font-size:1.2rem}
+.xcard>p{margin:0 0 14px;color:var(--muted)}
+.xbtn{display:block;width:100%;padding:14px;border-radius:16px;background:var(--pfill);color:var(--ink);font-weight:700;font-size:1.05rem}
+.xbtn:hover{filter:brightness(.97)}
+.xapp{margin-top:12px}
+.xapp a{color:var(--pri);font-weight:700;font-size:1.1rem;text-underline-offset:4px}
+.xapp p{margin:2px 0 0;color:var(--muted)}

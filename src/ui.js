@@ -24,7 +24,13 @@ const TXT = {
     both:'Entrambi', ES:'Spagna', LA:'America Latina', PT:'Portogallo', BR:'Brasile', UK:'Regno Unito', US:'Stati Uniti', FR:'Francia', CA:'Canada', simp:'Semplificato', trad:'Tradizionale',
     vq_es:'Quale spagnolo?', vq_pt:'Quale portoghese?', vq_en:'Quale inglese?', vq_fr:'Quale francese?', vq_zh:'Quale scrittura cinese?', via2:'tramite', latinHint:'Giapponese e singalese si possono scrivere anche con lettere latine: neko → 猫, balla → බල්ලා.', inScript:'In altre scritture:', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante', itSrc:'dal Wiktionary italiano', enMeans:'Significati in inglese, spesso più completi', itNote:'Le spiegazioni italiane vengono da un dizionario più piccolo: se manca qualcosa, apri i significati in inglese qui sotto.',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
+    instT:'Aggiungi alla schermata Home', instD:'iPhone: apri il sito in Safari, tocca Condividi, poi "Aggiungi alla schermata Home". Android: in Chrome tocca il menu ⋮, poi "Installa app".', instB:'Installa Kotoba', installed:'Kotoba è installata.',
+    shareT:'Ti piace?', shareD:'Condividila con qualcuno a cui potrebbe servire.', shareB:'Condividi Kotoba', shareTxt:'Kotoba: un dizionario calmo per scrivere e imparare le lingue. Gratis, senza account.', linkCopied:'Link copiato!',
+    moreT:'Altre app di Sandra', moreD:'Ti piace Kotoba? Ho fatto anche queste.',
+    appInward:'Una domanda profonda al giorno, da rispondere sul tuo diario di carta. Gratis, senza account.',
+    appRecipes:'Ricette semplici con le dosi dentro ogni passaggio e i timer già pronti. Gratis, senza account.',
+    appQuota:'Un budget giornaliero semplice: quello che non spendi passa al giorno dopo. Gratis, senza account.', itSrc:'dal Wiktionary italiano', enMeans:'Significati in inglese, spesso più completi', itNote:'Le spiegazioni italiane vengono da un dizionario più piccolo: se manca qualcosa, apri i significati in inglese qui sotto.',
     sizeT:'Dimensione del testo', sizes:['Piccolo','Normale','Grande','Molto grande'],
     hello:['Buona notte','Buongiorno','Buon pomeriggio','Buonasera'], wotd:'Parola del giorno', surprise:'🎲 Parola a sorpresa', open:'Apri',
     didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', siAudio:'Per il singalese non abbiamo ancora file audio registrati, quindi per ora non si può ascoltare la pronuncia.', noVoiceSi:'Per il singalese non esistono ancora registrazioni libere, e questo computer non ha una voce singalese. Sul telefono Android di solito funziona: nelle impostazioni della sintesi vocale di Google puoi scaricare la voce singalese.', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
@@ -46,7 +52,13 @@ const TXT = {
     both:'Both', ES:'Spain', LA:'Latin America', PT:'Portugal', BR:'Brazil', UK:'United Kingdom', US:'United States', FR:'France', CA:'Canada', simp:'Simplified', trad:'Traditional',
     vq_es:'Which Spanish?', vq_pt:'Which Portuguese?', vq_en:'Which English?', vq_fr:'Which French?', vq_zh:'Which Chinese script?', via2:'via', latinHint:'Japanese and Sinhala can also be typed with Latin letters: neko → 猫, balla → බල්ලා.', inScript:'In other scripts:', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant', itSrc:'from the Italian Wiktionary', enMeans:'Meanings in English, often more complete', itNote:'',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
+    instT:'Add to Home Screen', instD:'iPhone: open the site in Safari, tap Share, then "Add to Home Screen". Android: in Chrome tap the ⋮ menu, then "Install app".', instB:'Install Kotoba', installed:'Kotoba is installed.',
+    shareT:'Enjoying it?', shareD:'Share it with someone who might find it useful.', shareB:'Share Kotoba', shareTxt:'Kotoba: a calm dictionary for writing and learning languages. Free, no account.', linkCopied:'Link copied!',
+    moreT:'More apps by Sandra', moreD:"Like Kotoba? I've made these too.",
+    appInward:'One deep question a day, to answer in your own paper journal. Free, no account.',
+    appRecipes:'Simple recipes with the amounts inside every step and timers ready to go. Free, no account.',
+    appQuota:"A simple daily budget: what you don't spend carries over to the next day. Free, no account.", itSrc:'from the Italian Wiktionary', enMeans:'Meanings in English, often more complete', itNote:'',
     sizeT:'Text size', sizes:['Small','Normal','Large','Extra large'],
     hello:['Good night','Good morning','Good afternoon','Good evening'], wotd:'Word of the day', surprise:'🎲 Surprise word', open:'Open',
     didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', siAudio:'We do not have recorded audio files for Sinhala yet, so pronunciation cannot be played for now.', noVoiceSi:'There are no free Sinhala recordings yet, and this computer has no Sinhala voice. On Android phones it usually works: in Google text-to-speech settings you can download the Sinhala voice.', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
@@ -131,7 +143,7 @@ function home(){
     '<section class="card wotd" id="wotd" hidden></section>' +
     '<button class="act surprise" data-surprise>' + t('surprise') + '</button>' +
     (S.saved.length ? '<section class="shelf"><h2>★ ' + t('favs') + '</h2><div class="chips">' + wordChips(S.saved.slice(0, 8)) + '</div>' + (S.saved.length > 8 ? '<button class="morebtn" data-nav="favs">' + t('seeAll') + ' (' + S.saved.length + ')</button>' : '') + '</section>' : '') +
-    (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent.slice(0, 8)) + '</div></section>' : '');
+    (S.recent.length ? '<section class="shelf"><h2>' + t('recent') + '</h2><div class="chips">' + wordChips(S.recent.slice(0, 8)) + '</div></section>' : '') + extras();
   loadWotd();
 }
 function message(html){ out.innerHTML = '<div class="msg">' + html + '</div>'; }
@@ -542,6 +554,30 @@ document.addEventListener('click', e => {
     const list = S.saved.filter(x => favFilter === 'all' || x.l === favFilter);
     const txt = list.map(x => (x.s || x.w) + (x.tr ? ' (' + x.tr + ')' : '') + (x.g ? ' — ' + x.g : '')).join('\n');
     try{ navigator.clipboard.writeText(txt).then(() => { b.textContent = '✓ ' + t('copied'); setTimeout(() => { b.textContent = '⧉ ' + t('copyList'); }, 1400); }, () => {}); }catch(err){}
+  }
+});
+
+/* ===== install, share, more apps ===== */
+let installEv = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; });
+window.addEventListener('appinstalled', () => { installEv = null; toast(t('installed')); });
+const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const APPS = [['Inward', 'https://sandras-apps.github.io/inward-app/', 'appInward'], ['Easy Recipes', 'https://sandras-apps.github.io/easy-recipes/', 'appRecipes'], ['Quota', 'https://sandras-apps.github.io/quota-app/', 'appQuota']];
+function extras(){
+  return '<div class="extras">' +
+    (standalone() ? '' : '<section class="xcard"><h2>' + t('instT') + '</h2><p>' + t('instD') + '</p><button class="xbtn" data-install>' + t('instB') + '</button></section>') +
+    '<section class="xcard"><h2>' + t('shareT') + '</h2><p>' + t('shareD') + '</p><button class="xbtn" data-share>' + t('shareB') + '</button></section>' +
+    '<section class="xcard"><h2>' + t('moreT') + '</h2><p>' + t('moreD') + '</p>' +
+    APPS.map(a => '<div class="xapp"><a href="' + a[1] + '" target="_blank" rel="noopener">' + a[0] + '</a><p>' + t(a[2]) + '</p></div>').join('') + '</section></div>';
+}
+document.addEventListener('click', async e => {
+  if(e.target.closest('[data-install]')){
+    if(installEv){ installEv.prompt(); try{ await installEv.userChoice; }catch(err){} installEv = null; }
+    else toast(t('instD'));
+  } else if(e.target.closest('[data-share]')){
+    const url = 'https://sandras-apps.github.io/kotoba-app/';
+    if(navigator.share){ try{ await navigator.share({title: 'Kotoba', text: t('shareTxt'), url}); }catch(err){} }
+    else { try{ await navigator.clipboard.writeText(url); toast(t('linkCopied')); }catch(err){ toast(url); } }
   }
 });
 
