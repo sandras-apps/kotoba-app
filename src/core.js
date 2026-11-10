@@ -324,7 +324,7 @@ const PICK = {
   de: {ok:/^[A-Za-zÄÖÜäöüß]{3,14}$/}
 };
 /* Words that would be unpleasant as a "word of the day" are skipped. */
-const UNKIND = /\b(vulgar|offensive|derogatory|slur|pejorative|obscene|bomb\w*|kill\w*|murder\w*|death|dead|die|corpse|blood\w*|war|weapon\w*|gun\w*|rape\w*|sex\w*|suicide|drug\w*|torture\w*|slave\w*|attack\w*|violen\w*|disease|cancer|excrement|feces|urine|penis|vagina|prostitut\w*|whore|insult\w*)\b/i;
+const UNKIND = /\b(vulgar|offensive|derogatory|slur|pejorative|obscene|bomb\w*|kill\w*|murder\w*|death|dead|die|dying|corpse|hearse|funeral|coffin|grave|tomb|blood\w*|war|weapon\w*|gun\w*|rape\w*|sex\w*|suicide|drug\w*|torture\w*|slave\w*|attack\w*|violen\w*|disease|cancer|excrement|feces|urine|penis|vagina|prostitut\w*|whore|insult\w*)\b/i;
 async function randomWord(code, rnd){
   const L = BY_C[code], P = PICK[code] || {};
   const cat = P.cat || (L.wk + ' terms with usage examples');
