@@ -5,7 +5,7 @@ const store = {
   set(k, v){ try{ localStorage.setItem('dz.' + k, JSON.stringify(v)); }catch(e){} }
 };
 const S = {
-  langs: store.get('langs', ['it','en','es','zh','ja','fr','si']),
+  langs: (l => l && l.length ? l : ['it','en','es','zh','ja','fr','si'])(store.get('langs', null)),
   vars: Object.assign({es: store.get('es', 'both'), pt: 'both', en: 'both', fr: 'both', zh: 'simp'}, store.get('vars', {})),
   ui: store.get('ui', (navigator.language || 'it').startsWith('it') ? 'it' : 'en'),
   size: Math.min(3, Math.max(0, store.get('size', 1))),
@@ -36,7 +36,7 @@ const TXT = {
     wTitle:'Ciao! Questo è Kotoba', wSub:'Un dizionario calmo, per scrivere e per imparare le lingue.',
     w1:'Scrivi una parola in una delle tue lingue.', w2:'Trovi significato, esempi, sinonimi, contrari e traduzioni, con la scrittura originale e la pronuncia.',
     w3:'Tocca una parola colorata per cercarla. Salva con ☆ quelle che ti piacciono.',
-    wLangs:'Quali lingue usi?', wLater:'Puoi cambiarle quando vuoi da ⚙.', start:'Inizia', reWelcome:'Rivedi il benvenuto', noAI:'Niente AI, niente account: i dati vengono da Wiktionary e le tue parole restano sul tuo dispositivo.'},
+    wLangs:'Quali lingue usi? Toccale per sceglierle.', pickOne:'Scegli almeno una lingua', nChosen:'Lingue scelte:', trMissing:'Wiktionary non ha ancora una traduzione in:', yourLangs:'Le tue lingue:', change:'Cambia', wLater:'Puoi cambiarle quando vuoi da ⚙.', start:'Inizia', reWelcome:'Rivedi il benvenuto', noAI:'Niente AI, niente account: i dati vengono da Wiktionary e le tue parole restano sul tuo dispositivo.'},
   en: {ph:'Type a word…', go:'Search', recent:'Recent', saved:'Saved', meaning:'Meaning', syn:'Synonyms', ant:'Opposites',
     nyms:'Synonyms & opposites', trans:'Translations', rel:'Related words', help:'Helpers', all:'All', listen:'Listen', save:'Save', unsave:'Saved',
     copy:'Copy', copied:'Copied!', more:'Show more', notFound:'I can’t find', maybe:'Did you mean:', noLang:'This word exists, but not in one of your languages.',
@@ -58,7 +58,7 @@ const TXT = {
     wTitle:'Hi! This is Kotoba', wSub:'A calm dictionary, for writing and for learning languages.',
     w1:'Type a word in any of your languages.', w2:'You get meanings, examples, synonyms, opposites and translations, in the original script with pronunciation.',
     w3:'Tap a coloured word to look it up. Save the ones you like with ☆.',
-    wLangs:'Which languages do you use?', wLater:'You can change them any time from ⚙.', start:'Start', reWelcome:'See the welcome again', noAI:'No AI, no account: the data comes from Wiktionary and your words stay on your device.'}
+    wLangs:'Which languages do you use? Tap to choose them.', pickOne:'Choose at least one language', nChosen:'Chosen languages:', trMissing:'Wiktionary has no translation yet in:', yourLangs:'Your languages:', change:'Change', wLater:'You can change them any time from ⚙.', start:'Start', reWelcome:'See the welcome again', noAI:'No AI, no account: the data comes from Wiktionary and your words stay on your device.'}
 };
 const POS_IT = {Noun:'Sostantivo', Verb:'Verbo', Adjective:'Aggettivo', Adverb:'Avverbio', Pronoun:'Pronome', Preposition:'Preposizione', Conjunction:'Congiunzione',
   Interjection:'Interiezione', 'Proper noun':'Nome proprio', Numeral:'Numerale', Article:'Articolo', Determiner:'Determinante', Particle:'Particella', Phrase:'Frase',
@@ -301,6 +301,9 @@ async function loadTrans(){
   };
   groups.forEach((g, i) => { h += grp(g, i >= 3); });
   if(groups.length > 3) h += '<button class="morebtn" data-more>' + t('otherSenses') + ' (' + (groups.length - 3) + ')</button>';
+  const missing = targets.filter(c => !groups.some(g => g.by[c]));
+  if(groups.length && missing.length) h += '<p class="trmiss">' + t('trMissing') + ' ' + missing.map(c => esc(langName(c))).join(', ') + '.</p>';
+  h += '<p class="trlangs">' + t('yourLangs') + ' ' + S.langs.map(c => esc(langName(c))).join(', ') + ' · <button class="linkbtn inline" data-opensettings>⚙ ' + t('change') + '</button></p>';
   box.innerHTML = h;
 }
 
@@ -447,8 +450,10 @@ window.addEventListener('hashchange', () => {
   if(!R || R.r.title !== w) search(w);
 });
 /* ===== Welcome ===== */
+const WSTART = {};
 const WELCOME_LANGS = ['it','en','es','zh','ja','fr','si','ca','de','pt','ru','ar','hi','ko'];
 function welcome(keep){
+  if(!keep && !store.get('welcomed', false) && !WSTART.done){ WSTART.done = true; S.langs = []; }
   R = null; token++; view = 'welcome';
   document.body.classList.add('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -463,7 +468,8 @@ function welcome(keep){
       (Core.BY_C[c].n !== langName(c) ? '<span class="cq">' + esc(langName(c)) + '</span>' : '') + '</button>').join('') + '</div>' +
     '<div class="wvars">' + varBlocks(S.langs, 'data-wvar') + '</div>' +
     '<p class="muted small">' + t('wLater') + '</p>' +
-    '<button class="done big" data-start>' + t('start') + ' →</button>' +
+    '<p class="wcount">' + (S.langs.length ? t('nChosen') + ' <b>' + S.langs.map(c => esc(langName(c))).join(', ') + '</b>' : t('pickOne')) + '</p>' +
+    '<button class="done big" data-start' + (S.langs.length ? '' : ' disabled') + '>' + t('start') + ' →</button>' +
     '<p class="muted small center">' + t('noAI') + '</p></section>';
   if(!keep) window.scrollTo(0, 0);
 }
@@ -508,13 +514,12 @@ document.addEventListener('click', e => {
   else if(d.nav === 'favs'){ favs(); }
   else if(d.wl){
     const on = new Set(S.langs); on.has(d.wl) ? on.delete(d.wl) : on.add(d.wl);
-    if(!on.size) return;
     S.langs = Core.LANGS.map(L => L.c).filter(x => on.has(x)); store.set('langs', S.langs);
     const y = window.scrollY; welcome(true); window.scrollTo(0, y);
   }
   else if(d.wvar){ S.vars[d.wvar] = d.val; store.set('vars', S.vars); b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
   else if(d.wui){ S.ui = d.wui; store.set('ui', S.ui); applyPrefs(); welcome(true); }
-  else if('start' in d){ store.set('welcomed', true); home(); input.focus(); }
+  else if('start' in d){ if(!S.langs.length) return; store.set('langs', S.langs); store.set('welcomed', true); home(); input.focus(); }
   else if(d.ff){ favFilter = d.ff; lastRemoved = null; favs(); }
   else if(d.unfav !== undefined){
     const i = S.saved.findIndex(x => x.w === d.unfav && (x.l || '') === d.ul);
@@ -618,6 +623,7 @@ function openNote(w, l, li){
 }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-opensettings]')){ openSettings(); return; }
   const ib = e.target.closest('[data-info]');
   if(ib){ const p = ib.closest('header').querySelector('.infotext'); p.hidden = !p.hidden; ib.setAttribute('aria-expanded', !p.hidden); ib.classList.toggle('on', !p.hidden); return; }
   const b = e.target.closest('[data-surprise],[data-enable],[data-review],[data-rreveal],[data-rknew],[data-ragain],[data-noteopen],[data-notesave]');

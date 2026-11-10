@@ -210,3 +210,10 @@ body.welcoming .top{border-bottom-color:transparent}
 .enmeans{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
 .enmeans summary{cursor:pointer;color:var(--pri);font-weight:700;padding:6px 0}
 .itmode .card.syn .nrow .num:not(.gen),.itmode .card.ant .nrow .num:not(.gen){display:none}
+
+.trmiss{margin:10px 0 0;color:var(--muted);font-size:.95rem}
+.trlangs{margin:6px 0 0;color:var(--muted);font-size:.9rem;border-top:1px dashed var(--line);padding-top:10px}
+.wcount{text-align:center;margin:18px 0 0}
+.done:disabled{opacity:.45;cursor:default}
+.chip.wl{border-width:2px}
+.chip.wl.on{border-color:var(--pri)}
