@@ -553,7 +553,9 @@ async function search(w, hint){
     const names = Object.keys(r.entries).map(langName).concat(r.others).slice(0, 12);
     return message(t('noLang') + (names.length ? '<p>' + t('also') + ' ' + esc(names.join(', ')) + '</p>' : ''));
   }
-  const cur = hint && avail.includes(hint) ? hint : scriptOf(r.title, avail) || (avail.includes(S.last) ? S.last : avail[0]);
+  const size = c => r.entries[c].pos.reduce((n, p) => n + p.senses.length, 0) + (c === S.last ? 0.5 : 0);
+  const richest = avail.slice().sort((a, b) => size(b) - size(a))[0];
+  const cur = hint && avail.includes(hint) ? hint : scriptOf(r.title, avail) || richest;
   R = {r, avail, cur, pivot: null}; view = 'word';
   focus = 'all';
   if(decodeURIComponent(location.hash.slice(1)) !== r.title) location.hash = encodeURIComponent(r.title);
