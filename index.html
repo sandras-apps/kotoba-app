@@ -977,7 +977,8 @@ function show(){
       });
       h += '</ol>' + (p.senses.length > 5 ? '<button class="morebtn" data-more>' + t('more') + ' ' + (p.senses.length - 5) + '</button>' : '') + '</div>';
     });
-    h += '<details class="enmeans"><summary>' + t('enMeans') + ' (' + n + ')</summary>';
+    const itN = IT.reduce((k, p) => k + p.senses.length, 0);
+    h += '<details class="enmeans"' + (itN <= 1 && n >= 3 ? ' open' : '') + '><summary>' + t('enMeans') + ' (' + n + ')</summary>';
   }
   E.pos.forEach(p => {
     h += '<div class="posblock"><h3>' + esc(posName(p.name)) + '</h3><ol class="senses">';
