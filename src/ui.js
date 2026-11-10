@@ -24,7 +24,7 @@ const TXT = {
     both:'Entrambi', ES:'Spagna', LA:'America Latina', PT:'Portogallo', BR:'Brasile', UK:'Regno Unito', US:'Stati Uniti', FR:'Francia', CA:'Canada', simp:'Semplificato', trad:'Tradizionale',
     vq_es:'Quale spagnolo?', vq_pt:'Quale portoghese?', vq_en:'Quale inglese?', vq_fr:'Quale francese?', vq_zh:'Quale scrittura cinese?', via2:'tramite', latinHint:'Giapponese e singalese si possono scrivere anche con lettere latine: neko → 猫, balla → බල්ලා.', inScript:'In altre scritture:', uiLang:'Lingua dell’app', close:'Fatto', defsIn:'Le spiegazioni dei significati sono in inglese.',
     src:'Dati da Wiktionary (CC BY-SA 4.0) · Nessuna AI', goLemma:'Vai a', hint:'Scrivi in una qualsiasi delle tue lingue. Tocca una parola colorata per cercarla.',
-    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante',
+    size:'Dimensione del testo', theme:'Tema chiaro / scuro', general:'In generale', otherSenses:'Altri significati', empty:'Ancora niente qui.', title:'Kotoba', form:'variante', itSrc:'dal Wiktionary italiano', enMeans:'Significati in inglese, spesso più completi', itNote:'Le spiegazioni italiane vengono da un dizionario più piccolo: se manca qualcosa, apri i significati in inglese qui sotto.',
     sizeT:'Dimensione del testo', sizes:['Piccolo','Normale','Grande','Molto grande'],
     hello:['Buona notte','Buongiorno','Buon pomeriggio','Buonasera'], wotd:'Parola del giorno', surprise:'🎲 Parola a sorpresa', open:'Apri',
     didYou:'Forse intendevi', asked:'Hai scritto', alsoSee:'vedi anche', enable:'Attiva', siAudio:'Per il singalese non abbiamo ancora file audio registrati, quindi per ora non si può ascoltare la pronuncia.', noVoiceSi:'Per il singalese non esistono ancora registrazioni libere, e questo computer non ha una voce singalese. Sul telefono Android di solito funziona: nelle impostazioni della sintesi vocale di Google puoi scaricare la voce singalese.', noVoice:'Il tuo dispositivo non ha una voce per questa lingua, e Wiktionary non ha una registrazione.',
@@ -46,7 +46,7 @@ const TXT = {
     both:'Both', ES:'Spain', LA:'Latin America', PT:'Portugal', BR:'Brazil', UK:'United Kingdom', US:'United States', FR:'France', CA:'Canada', simp:'Simplified', trad:'Traditional',
     vq_es:'Which Spanish?', vq_pt:'Which Portuguese?', vq_en:'Which English?', vq_fr:'Which French?', vq_zh:'Which Chinese script?', via2:'via', latinHint:'Japanese and Sinhala can also be typed with Latin letters: neko → 猫, balla → බල්ලා.', inScript:'In other scripts:', uiLang:'App language', close:'Done', defsIn:'Meanings are explained in English.',
     src:'Data from Wiktionary (CC BY-SA 4.0) · No AI', goLemma:'Go to', hint:'Type in any of your languages. Tap a coloured word to look it up.',
-    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant',
+    size:'Text size', theme:'Light / dark theme', general:'In general', otherSenses:'Other meanings', empty:'Nothing here yet.', title:'Kotoba', form:'variant', itSrc:'from the Italian Wiktionary', enMeans:'Meanings in English, often more complete', itNote:'',
     sizeT:'Text size', sizes:['Small','Normal','Large','Extra large'],
     hello:['Good night','Good morning','Good afternoon','Good evening'], wotd:'Word of the day', surprise:'🎲 Surprise word', open:'Open',
     didYou:'Did you mean', asked:'You typed', alsoSee:'see also', enable:'Turn on', siAudio:'We do not have recorded audio files for Sinhala yet, so pronunciation cannot be played for now.', noVoiceSi:'There are no free Sinhala recordings yet, and this computer has no Sinhala voice. On Android phones it usually works: in Google text-to-speech settings you can download the Sinhala voice.', noVoice:'Your device has no voice for this language, and Wiktionary has no recording.',
@@ -163,11 +163,17 @@ async function search(w, hint, exact){
   const size = c => r.entries[c].pos.reduce((n, p) => n + p.senses.length, 0) + (c === S.last ? 0.5 : 0);
   const richest = avail.slice().sort((a, b) => size(b) - size(a))[0];
   const cur = hint && avail.includes(hint) ? hint : scriptOf(r.title, avail) || richest;
-  R = {r, avail, cur, pivot: null}; view = 'word';
+  R = {r, avail, cur, pivot: null, itm: {}}; view = 'word';
+  await ensureIt(cur); if(my !== token) return;
   focus = 'all';
   if(decodeURIComponent(location.hash.slice(1)) !== r.title) location.hash = encodeURIComponent(r.title);
   show();
   didYouMean(w, my);
+}
+async function ensureIt(lc){
+  if(S.ui !== 'it' || !R || lc in R.itm) return;
+  const E = R.r.entries[lc];
+  R.itm[lc] = await Promise.race([Core.itMeanings([E.typed, E.word, R.r.asked && R.r.asked.toLowerCase()], lc).catch(() => null), new Promise(r => setTimeout(() => r(null), 3500))]);
 }
 function remember(){
   const w = R.r.title, l = R.cur;
@@ -204,7 +210,20 @@ function show(){
     '<button data-focus="' + f[0] + '" class="' + (focus === f[0] ? 'on' : '') + '">' + t(f[1]) + '</button>').join('') + '</nav>';
 
   /* meanings */
-  h += '<section class="card mean" data-k="mean"><h2>' + t('meaning') + '</h2>';
+  const IT = S.ui === 'it' && R.itm && R.itm[lc];
+  h += '<section class="card mean" data-k="mean"><h2>' + t('meaning') + (IT ? ' <span class="src">' + t('itSrc') + '</span>' : '') + '</h2>';
+  if(IT){
+    IT.forEach(p => {
+      h += '<div class="posblock"><h3>' + esc(posName(p.pos)) + '</h3><ol class="senses">';
+      p.senses.forEach((s, i) => {
+        h += '<li class="sense' + (i >= 5 ? ' extra' : '') + '"><span class="num">' + (i + 1) + '</span><div><p class="def">' +
+          s.labels.slice(0, 3).map(l => '<span class="lb">' + esc(l) + '</span>').join('') + ' ' + s.html + '</p>' +
+          s.ex.map(e => '<div class="ex"><span class="ex-t" lang="' + lc + '">' + e.h + '</span></div>').join('') + '</div></li>';
+      });
+      h += '</ol>' + (p.senses.length > 5 ? '<button class="morebtn" data-more>' + t('more') + ' ' + (p.senses.length - 5) + '</button>' : '') + '</div>';
+    });
+    h += '<details class="enmeans"><summary>' + t('enMeans') + ' (' + n + ')</summary>';
+  }
   E.pos.forEach(p => {
     h += '<div class="posblock"><h3>' + esc(posName(p.name)) + '</h3><ol class="senses">';
     p.senses.forEach((s, i) => {
@@ -220,6 +239,7 @@ function show(){
     if(p.senses.length > 5) h += '<button class="morebtn" data-more>' + t('more') + ' ' + (p.senses.length - 5) + '</button>';
     h += '</div>';
   });
+  if(IT) h += '</details>';
   h += '</section>';
 
   /* synonyms & antonyms */
@@ -244,9 +264,9 @@ function show(){
   h += '<section class="card help" data-k="all"><h2>' + t('help') + '</h2>';
   E.pos.forEach(p => { if(p.head && p.head.info) h += '<p><b>' + t('forms') + ' · ' + esc(posName(p.name)) + ':</b> <span lang="' + lc + '">' + esc(p.head.info) + '</span></p>'; });
   if(E.notes.length) h += '<p><b>' + t('notes') + ':</b></p><ul>' + E.notes.map(x => '<li>' + x + '</li>').join('') + '</ul>';
-  h += '<p class="muted">' + t('defsIn') + '</p><p><a class="ext" target="_blank" rel="noopener" href="https://en.wiktionary.org/wiki/' + encodeURIComponent(E.word) + '#' + L.wk + '">' + t('wikt') + ' ↗</a></p></section>';
+  h += (IT ? '' : '<p class="muted">' + t('defsIn') + '</p>') + '<p><a class="ext" target="_blank" rel="noopener" href="https://en.wiktionary.org/wiki/' + encodeURIComponent(E.word) + '#' + L.wk + '">' + t('wikt') + ' ↗</a></p></section>';
 
-  out.innerHTML = h; out.dataset.focus = focus;
+  out.innerHTML = h; out.dataset.focus = focus; out.classList.toggle('itmode', !!IT);
   window.scrollTo(0, 0);
   loadTrans();
 }
@@ -357,14 +377,14 @@ document.addEventListener('click', e => {
   if(!b || b.closest('#set')) return;
   const d = b.dataset;
   if(d.w !== undefined){ search(d.w, d.l || undefined, !!d.exact); }
-  else if(d.tab){ R.cur = d.tab; R.pivot = null; S.last = d.tab; store.set('last', S.last); show(); }
+  else if(d.tab){ const my = token; R.cur = d.tab; R.pivot = null; S.last = d.tab; store.set('last', S.last); ensureIt(d.tab).then(() => { if(my === token) show(); }); }
   else if(d.focus){ focus = d.focus; out.dataset.focus = focus; out.querySelectorAll('.focus button').forEach(x => x.classList.toggle('on', x === b)); }
   else if(d.pivot){ R.pivot = d.pivot; $('#trbox').innerHTML = '<span class="spin"></span>'; loadTrans(); }
   else if('more' in d){ b.parentElement.querySelectorAll('.extra').forEach(x => x.classList.remove('extra')); b.remove(); }
   else if(d.act === 'listen') listen(b);
   else if(d.act === 'save'){
     const w = R.r.title, l = R.cur;
-    const E = R.r.entries[l], s0 = E.pos[0] && E.pos[0].senses[0];
+    const E = R.r.entries[l], it0 = R.itm && R.itm[l] && R.itm[l][0].senses[0], s0 = it0 || (E.pos[0] && E.pos[0].senses[0]);
     const g = s0 ? s0.html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim().slice(0, 90) : '';
     S.saved = isSaved() ? S.saved.filter(x => !(x.w === w && x.l === l)) : [{w, l, s: E.typed || E.word, tr: E.tr || '', g, at: Date.now()}].concat(S.saved);
     store.set('saved', S.saved);
@@ -533,15 +553,17 @@ const gloss = E => { const s0 = E.pos[0] && E.pos[0].senses[0]; return s0 ? s0.h
 /* ===== word of the day ===== */
 async function loadWotd(){
   const my = token, day = new Date().toISOString().slice(0, 10);
-  let W = store.get('wotd2', null);
-  if(!W || W.d !== day || !S.langs.includes(W.l)){
+  let W = store.get('wotd3', null);
+  if(!W || W.d !== day || !S.langs.includes(W.l) || W.ui !== S.ui){
     const rnd = seeded(day + S.langs.join());
     const l = S.langs[Math.floor(rnd() * S.langs.length)];
     let res = null;
     try{ res = await Core.randomWord(l, rnd); }catch(e){}
     if(!res) return;
-    W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g: gloss(res.E)};
-    store.set('wotd2', W);
+    let g = gloss(res.E);
+    if(S.ui === 'it'){ const im = await Core.itMeanings([res.w], l).catch(() => null); if(im) g = im[0].senses[0].html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 110); }
+    W = {d: day, l, w: res.w, s: res.E.typed || res.E.word, tr: res.E.tr || '', g, ui: S.ui};
+    store.set('wotd3', W);
   }
   const box = $('#wotd'); if(my !== token || !box) return;
   box.innerHTML = '<h2>✨ ' + t('wotd') + ' · ' + esc(langName(W.l)) + '</h2>' +

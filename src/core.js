@@ -441,4 +441,71 @@ async function scriptSuggest(q, codes){
   }
   return out;
 }
-const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, esc, region, VARIANTS};
+/* ===== Meanings in Italian, from it.wiktionary.org (used when the app is in Italian) ===== */
+const IT_API = 'https://it.wiktionary.org/w/api.php';
+const IT_NAME = {it: 'Italiano', en: 'Inglese', es: 'Spagnolo', zh: 'Cinese', ja: 'Giapponese', fr: 'Francese', si: 'Singalese', ca: 'Catalano', de: 'Tedesco', pt: 'Portoghese', ru: 'Russo', ar: 'Arabo', hi: 'Hindi', ko: 'Coreano'};
+const IT_SKIP = /^(Sillabazione|Pronuncia|Etimologia|Sinonimi|Contrari|Parole derivate|Termini correlati|Alterati|Proverbi|Traduzion|Iperonimi|Iponimi|Varianti|Note|Citazion|Coniugazione|Declinazione|Uso|Altre forme|Riferimenti|Parole correlate|Omofoni|Anagrammi|Forme flesse|Leggi|Codice)/i;
+const itCache = new Map();
+function itSafe(n){
+  let o = '';
+  n.childNodes.forEach(x => {
+    if(x.nodeType === 3) o += esc(x.nodeValue);
+    else if(x.nodeType === 1){
+      const t = x.tagName;
+      if(/^(STYLE|SCRIPT|FIGURE|IMG|SUP|SMALL|UL|OL|DL|TABLE)$/.test(t)) return;
+      if(t === 'B') o += '<b>' + itSafe(x) + '</b>';
+      else if(t === 'I') o += '<i>' + itSafe(x) + '</i>';
+      else if(t === 'A' && /^\/wiki\/[^:]+$/.test(x.getAttribute('href') || '') && !x.classList.contains('new'))
+        o += '<a data-w="' + esc(x.getAttribute('title') || x.textContent) + '" data-l="it">' + itSafe(x) + '</a>';
+      else o += itSafe(x);
+    }
+  });
+  return o;
+}
+const isExample = li => { const f = li.firstElementChild; return f && f.tagName === 'I' && txt(f).length >= txt(li).length * 0.6; };
+function itSense(li, out){
+  const subs = [...li.children].filter(x => x.tagName === 'UL' || x.tagName === 'OL');
+  const items = subs.flatMap(s => [...s.children].filter(x => x.tagName === 'LI'));
+  const defs = items.filter(x => !isExample(x));
+  if(defs.length && li.querySelector(':scope > b')){ defs.forEach(d => itSense(d, out)); return; }
+  const labels = [...li.querySelectorAll(':scope > small')].map(s => txt(s).replace(/^\(|\)$/g, '')).filter(Boolean);
+  const html = itSafe(li).replace(/\s+/g, ' ').replace(/^[\s,;:]+/, '').trim();
+  const ex = items.filter(isExample).slice(0, 2).map(x => ({h: itSafe(x).replace(/\s+/g, ' ').trim()}));
+  if(html) out.push({html, labels, ex});
+  defs.forEach(d => itSense(d, out));
+}
+/* [{pos, senses:[{html, labels, ex}]}] or null when it.wiktionary has nothing for this word in this language */
+function itDoc(w){
+  if(!itCache.has(w)) itCache.set(w, (async () => {
+    try{
+      const r = await fetch(IT_API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(w));
+      const j = await r.json(); if(j.error) return null;
+      return new DOMParser().parseFromString(j.parse.text, 'text/html').body.firstElementChild;
+    }catch(e){ return null; }
+  })());
+  return itCache.get(w);
+}
+async function itMeanings(words, lc){
+  const name = IT_NAME[lc]; if(!name) return null;
+  for(const w of words.filter((x, i, a) => x && a.indexOf(x) === i)){
+    const root = await itDoc(w); if(!root) continue;
+    const res = (() => {
+        let on = false, h = '', res = [];
+        for(const el of root.children){
+          const h2 = el.matches('.mw-heading2') && el.querySelector('h2');
+          if(h2){ on = txt(h2) === name; continue; }
+          if(!on) continue;
+          const h3 = el.matches('.mw-heading') && el.querySelector('h3,h4');
+          if(h3){ h = txt(h3); continue; }
+          if(el.tagName === 'OL' && h && !IT_SKIP.test(h)){
+            const senses = []; [...el.children].forEach(li => itSense(li, senses));
+            if(senses.length) res.push({pos: h.replace(/\s*\d+$/, ''), senses: senses.slice(0, 25)});
+          }
+        }
+        return res.length ? res : null;
+    })();
+    if(res) return res;
+  }
+  return null;
+}
+const Core = {LANGS, BY_C, BY_WK, lookup, translations, suggest, scriptSuggest, randomWord, itMeanings, esc, region, VARIANTS};
