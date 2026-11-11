@@ -502,9 +502,8 @@ function itSense(li, out){
   if(defs.length && li.querySelector(':scope > b')){ defs.forEach(d => itSense(d, out)); return; }
   const labels = [...li.querySelectorAll(':scope > small')].map(s => txt(s).replace(/^\(|\)$/g, '')).filter(Boolean);
   const html = itSafe(li).replace(/\s+/g, ' ').replace(/^[\s,;:]+/, '').trim();
-  const ex = items.filter(isExample).slice(0, 2).map(x => ({h: itSafe(x).replace(/\s+/g, ' ').trim()}));
+  const ex = items.slice(0, 2).map(x => ({h: itSafe(x).replace(/\s+/g, ' ').trim()})).filter(e => e.h);
   if(html) out.push({html, labels, ex});
-  defs.forEach(d => itSense(d, out));
 }
 /* [{pos, senses:[{html, labels, ex}]}] or null when it.wiktionary has nothing for this word in this language */
 function itDoc(w){
