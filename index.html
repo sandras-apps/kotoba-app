@@ -975,7 +975,7 @@ function scriptOf(w, avail){
   return null;
 }
 function home(){
-  R = null; token++; input.value = ''; view = 'home'; document.body.classList.remove('welcoming');
+  R = null; token++; input.value = ''; sug.hidden = true; view = 'home'; document.body.classList.remove('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
   const hr = new Date().getHours(), hi = t('hello')[hr < 5 ? 0 : hr < 13 ? 1 : hr < 18 ? 2 : 3];
   out.innerHTML = '<h1 class="hello">' + hi + ' ' + (hr >= 5 && hr < 18 ? '☀️' : '🌙') + '</h1><p class="hint">' + t('hint') + (S.langs.includes('ja') || S.langs.includes('si') ? '<br><span class="small">' + t('latinHint') + '</span>' : '') + '</p>' +
@@ -1336,7 +1336,7 @@ const LOGO = '<svg viewBox="0 0 120 120" width="88" height="88"><rect x="24" y="
 
 /* ===== Favourite words ===== */
 function favs(){
-  R = null; token++; view = 'favs'; input.value = '';
+  R = null; token++; view = 'favs'; input.value = ''; sug.hidden = true;
   document.body.classList.remove('welcoming');
   if(location.hash) history.replaceState(null, '', location.pathname + location.search);
   const langs = [...new Set(S.saved.map(x => x.l))].filter(c => Core.BY_C[c]);
