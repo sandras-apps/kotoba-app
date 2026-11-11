@@ -19,7 +19,7 @@ const S = {
 function syncLangs(){ S.langs = Core.LANGS.map(L => L.c).filter(c => S.picked.includes(c) || c === S.ui); }
 function setPicked(list){ S.picked = Core.LANGS.map(L => L.c).filter(c => list.includes(c)); store.set('langs', S.picked); syncLangs(); }
 syncLangs();
-const VERSION = '1.3';
+const VERSION = '1.4';
 const TXT = {
   it: {ph:'Scrivi una parola…', go:'Cerca', recent:'Recenti', saved:'Salvate', meaning:'Significato', syn:'Sinonimi', ant:'Contrari',
     nyms:'Sinonimi e contrari', trans:'Traduzioni', rel:'Parole collegate', help:'Aiuti', all:'Tutto', listen:'Ascolta', save:'Salva', unsave:'Salvata',

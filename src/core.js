@@ -76,6 +76,14 @@ function region(s, lc){
   return a && !b ? V[0] : b && !a ? V[1] : null;
 }
 
+/* On phones Wikimedia answers in "mobile format": every section is wrapped in a <section> box.
+   Unwrapping them gives the same flat page as on a computer. */
+function flatten(root){
+  let s;
+  while((s = root.querySelector('section'))) s.replaceWith(...s.childNodes);
+  root.querySelectorAll('.lazy-image-placeholder,noscript').forEach(e => e.remove());
+  return root;
+}
 async function getDoc(title){
   if(cache.has(title)) return cache.get(title);
   const p = (async () => {
@@ -85,7 +93,7 @@ async function getDoc(title){
     if(j.error) return null;
     const d = new DOMParser().parseFromString(j.parse.text, 'text/html');
     d.querySelectorAll('style,script,.mw-editsection,sup.reference,.maintenance-line,figure,.sister-project,.interproject-box,.checktrans,.thumb').forEach(e => e.remove());
-    return {title: j.parse.title, root: d.body.firstElementChild};
+    return {title: j.parse.title, root: flatten(d.body.firstElementChild)};
   })();
   cache.set(title, p);
   p.catch(() => cache.delete(title));
@@ -504,7 +512,7 @@ function itDoc(w){
     try{
       const r = await wfetch(IT_API + '?action=parse&prop=text&redirects=1&format=json&formatversion=2&origin=*&page=' + encodeURIComponent(w));
       const j = await r.json(); if(j.error) return null;
-      return new DOMParser().parseFromString(j.parse.text, 'text/html').body.firstElementChild;
+      return flatten(new DOMParser().parseFromString(j.parse.text, 'text/html').body.firstElementChild);
     }catch(e){ return null; }
   })());
   return itCache.get(w);
